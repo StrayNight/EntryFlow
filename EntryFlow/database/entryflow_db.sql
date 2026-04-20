@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Apr 20, 2026 at 10:07 AM
+-- Generation Time: Apr 20, 2026 at 10:19 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -38,6 +38,16 @@ CREATE TABLE `businesses` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `businesses`
+--
+
+INSERT INTO `businesses` (`business_id`, `user_id`, `template_id`, `business_name`, `industry_type`, `status`, `created_at`, `updated_at`) VALUES
+(1, 1, NULL, 'Juan Mini Store', 'Retail', 'active', '2026-04-20 08:18:40', NULL),
+(2, 2, NULL, 'Maria Bakeshop', 'Food', 'active', '2026-04-20 08:18:40', NULL),
+(3, 3, NULL, 'Pedro Repair Shop', 'Services', 'active', '2026-04-20 08:18:40', NULL),
+(4, 4, NULL, 'Ana Online Boutique', 'E-commerce', 'active', '2026-04-20 08:18:40', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -50,6 +60,22 @@ CREATE TABLE `categories` (
   `name` varchar(100) NOT NULL,
   `type` enum('income','expense') NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`category_id`, `business_id`, `name`, `type`) VALUES
+(1, 1, 'Product Sales', 'income'),
+(2, 1, 'Supplies', 'expense'),
+(3, 1, 'Rent', 'expense'),
+(4, 2, 'Cake Sales', 'income'),
+(5, 2, 'Ingredients', 'expense'),
+(6, 2, 'Utilities', 'expense'),
+(7, 3, 'Repair Service', 'income'),
+(8, 3, 'Parts', 'expense'),
+(9, 4, 'Online Sales', 'income'),
+(10, 4, 'Shipping Cost', 'expense');
 
 -- --------------------------------------------------------
 
@@ -64,6 +90,16 @@ CREATE TABLE `customers` (
   `phone` varchar(50) DEFAULT NULL,
   `email` varchar(150) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `customers`
+--
+
+INSERT INTO `customers` (`customer_id`, `business_id`, `name`, `phone`, `email`) VALUES
+(1, 1, 'Carlos Buyer', '09111111111', 'carlosb@example.com'),
+(2, 2, 'Wedding Client', '09222222222', 'wedding@example.com'),
+(3, 3, 'Motorcycle Owner', '09333333333', 'moto@example.com'),
+(4, 4, 'Online Shopper', '09444444444', 'shopper@example.com');
 
 -- --------------------------------------------------------
 
@@ -108,6 +144,29 @@ CREATE TABLE `transactions` (
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`transaction_id`, `business_id`, `category_id`, `customer_id`, `amount`, `description`, `transaction_date`, `created_at`, `updated_at`) VALUES
+(1, 1, 1, 1, 300.00, 'Morning sales', '2026-04-01', '2026-04-20 08:18:40', NULL),
+(2, 1, 1, 1, 450.00, 'Afternoon sales', '2026-04-01', '2026-04-20 08:18:40', NULL),
+(3, 1, 2, NULL, 200.00, 'Restocked snacks', '2026-04-02', '2026-04-20 08:18:40', NULL),
+(4, 1, 3, NULL, 1500.00, 'Monthly rent', '2026-04-03', '2026-04-20 08:18:40', NULL),
+(5, 1, 1, 1, 500.00, 'Weekend sales spike', '2026-04-05', '2026-04-20 08:18:40', NULL),
+(6, 2, 4, 2, 5000.00, 'Wedding cake order', '2026-04-02', '2026-04-20 08:18:40', NULL),
+(7, 2, 5, NULL, 1200.00, 'Bought ingredients', '2026-04-01', '2026-04-20 08:18:40', NULL),
+(8, 2, 6, NULL, 800.00, 'Electricity bill', '2026-04-03', '2026-04-20 08:18:40', NULL),
+(9, 2, 4, NULL, 1500.00, 'Walk-in cake sales', '2026-04-04', '2026-04-20 08:18:40', NULL),
+(10, 3, 7, 3, 700.00, 'Motorcycle repair', '2026-04-01', '2026-04-20 08:18:40', NULL),
+(11, 3, 8, NULL, 300.00, 'Purchased spare parts', '2026-04-01', '2026-04-20 08:18:40', NULL),
+(12, 3, 7, 3, 1200.00, 'Engine repair job', '2026-04-03', '2026-04-20 08:18:40', NULL),
+(13, 4, 9, 4, 900.00, 'Online order #001', '2026-04-02', '2026-04-20 08:18:40', NULL),
+(14, 4, 10, NULL, 150.00, 'Shipping expense', '2026-04-02', '2026-04-20 08:18:40', NULL),
+(15, 4, 9, 4, 1300.00, 'Online order #002', '2026-04-03', '2026-04-20 08:18:40', NULL),
+(16, 4, 10, NULL, 200.00, 'Shipping expense', '2026-04-03', '2026-04-20 08:18:40', NULL),
+(17, 4, 9, 4, 2000.00, 'Bulk order sale', '2026-04-05', '2026-04-20 08:18:40', NULL);
+
 -- --------------------------------------------------------
 
 --
@@ -124,6 +183,22 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT NULL ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `users`
+--
+
+INSERT INTO `users` (`user_id`, `name`, `email`, `password_hash`, `plan_type`, `status`, `created_at`, `updated_at`) VALUES
+(1, 'Juan Dela Cruz', 'juan@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(2, 'Maria Santos', 'maria@example.com', '$2y$10$dummyhash', 'premium', 'active', '2026-04-20 08:18:40', NULL),
+(3, 'Pedro Reyes', 'pedro@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(4, 'Ana Lopez', 'ana@example.com', '$2y$10$dummyhash', 'premium', 'active', '2026-04-20 08:18:40', NULL),
+(5, 'Carlos Mendoza', 'carlos@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(6, 'Liza Ramos', 'liza@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(7, 'Mark Villanueva', 'mark@example.com', '$2y$10$dummyhash', 'premium', 'active', '2026-04-20 08:18:40', NULL),
+(8, 'Ella Cruz', 'ella@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(9, 'Ryan Torres', 'ryan@example.com', '$2y$10$dummyhash', 'free', 'active', '2026-04-20 08:18:40', NULL),
+(10, 'Sophia Lim', 'sophia@example.com', '$2y$10$dummyhash', 'premium', 'active', '2026-04-20 08:18:40', NULL);
 
 --
 -- Indexes for dumped tables
@@ -188,19 +263,19 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `businesses`
 --
 ALTER TABLE `businesses`
-  MODIFY `business_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `business_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `categories`
 --
 ALTER TABLE `categories`
-  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `category_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `customer_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=5;
 
 --
 -- AUTO_INCREMENT for table `reports`
@@ -218,13 +293,13 @@ ALTER TABLE `templates`
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `transaction_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=18;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `user_id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
 
 --
 -- Constraints for dumped tables
