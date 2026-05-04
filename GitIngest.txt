@@ -1,0 +1,2412 @@
+================================================
+FILE: README.md
+================================================
+# EntryFlow
+
+
+================================================
+FILE: index.html
+================================================
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="refresh" content="0;url=EntryFlow/index.html">
+    <title>Redirecting...</title>
+</head>
+<body>
+    <p>Redirecting to <a href="EntryFlow/index.html">EntryFlow</a>...</p>
+</body>
+</html>
+
+
+
+================================================
+FILE: LICENSE
+================================================
+MIT License
+
+Copyright (c) 2026 StrayNight
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+
+================================================
+FILE: EntryFlow/clients.php
+================================================
+<?php
+session_start();
+require_once 'config.php';
+requireLogin();
+
+$db = getDB();
+$userId = (int)$_SESSION['user_id'];
+
+// Search logic
+$search = $_GET['search'] ?? '';
+$searchQuery = "";
+if ($search !== '') {
+    $searchEscaped = $db->real_escape_string($search);
+    $searchQuery = "AND c.name LIKE '%$searchEscaped%'";
+}
+
+// Fetch clients
+$query = "
+    SELECT c.*, COUNT(t.id) AS tx_count, 
+           SUM(CASE WHEN t.type='income' THEN t.amount ELSE 0 END) AS total_revenue
+    FROM clients c
+    LEFT JOIN transactions t ON t.client_id = c.id AND t.user_id = $userId
+    WHERE c.user_id = $userId $searchQuery
+    GROUP BY c.id 
+    ORDER BY c.name ASC
+";
+$clients = $db->query($query)->fetch_all(MYSQLI_ASSOC);
+
+include 'includes/header.php'; 
+?>
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <form method="GET" action="clients.php" style="display: flex; gap: 10px;">
+        <input type="text" name="search" class="sb" placeholder="Search clients..." value="<?= htmlspecialchars($search) ?>">
+        <button type="submit" class="btn btn-primary">Search</button>
+        <?php if($search): ?>
+            <a href="clients.php" class="btn" style="background: var(--surface-2); color: var(--text-main); text-decoration: none;">Clear</a>
+        <?php endif; ?>
+    </form>
+    
+    <button class="btn btn-primary" onclick="openModal('clientModal')">+ Add Client</button>
+</div>
+
+<div class="tc">
+    <table>
+        <thead>
+            <tr>
+                <th>Client Name</th>
+                <th>Contact Info</th>
+                <th>Address</th>
+                <th>Transactions</th>
+                <th>Total Revenue</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($clients)): ?>
+                <tr>
+                    <td colspan="6" style="text-align: center; padding: 30px; color: var(--text-muted);">No clients found.</td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($clients as $client): ?>
+                    <tr>
+                        <td class="client-name-wrap">
+                            <?php 
+                                $initial = strtoupper(substr($client['name'], 0, 1)); 
+                                $colorClass = 'av-' . ((ord($initial) % 5) + 1); 
+                            ?>
+                            <div class="avatar <?= $colorClass ?>"><?= $initial ?></div>
+                            <span style="font-weight: 500; color: var(--primary-light);"><?= htmlspecialchars($client['name']) ?></span>
+                        </td>
+                        <td class="tdn">
+                            <div><?= htmlspecialchars($client['email'] ?? 'No email') ?></div>
+                            <div class="tds"><?= htmlspecialchars($client['phone'] ?? 'No phone') ?></div>
+                        </td>
+                        <td><?= htmlspecialchars($client['address'] ?? '—') ?></td>
+                        <td><?= (int)$client['tx_count'] ?></td>
+                        <td class="ap">₱<?= number_format($client['total_revenue'] ?? 0, 2) ?></td>
+                        <td style="display: flex; gap: 5px;">
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
+                                onclick="editClient(this)"
+                                data-id="<?= $client['id'] ?>"
+                                data-name="<?= htmlspecialchars($client['name']) ?>"
+                                data-email="<?= htmlspecialchars($client['email'] ?? '') ?>"
+                                data-phone="<?= htmlspecialchars($client['phone'] ?? '') ?>"
+                                data-address="<?= htmlspecialchars($client['address'] ?? '') ?>"
+                                data-notes="<?= htmlspecialchars($client['notes'] ?? '') ?>"
+                            >Edit</button>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
+                                onclick="confirmDelete('client', <?= $client['id'] ?>)">Delete</button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<?php include 'includes/footer.php'; ?>
+
+
+================================================
+FILE: EntryFlow/config.php
+================================================
+[Binary file]
+
+
+================================================
+FILE: EntryFlow/entryflow_db.sql
+================================================
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Host: 127.0.0.1
+-- Generation Time: May 04, 2026 at 11:34 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.0.30
+
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
+
+
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
+
+--
+-- Database: `entryflow_db`
+--
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `admins`
+--
+
+CREATE TABLE `admins` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(100) NOT NULL,
+  `email` varchar(150) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `role` enum('owner','staff') NOT NULL DEFAULT 'owner',
+  `business_name` varchar(200) DEFAULT NULL,
+  `business_type` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `currency` varchar(5) NOT NULL DEFAULT 'PHP',
+  `avatar_color` varchar(20) NOT NULL DEFAULT '#9B1D1D',
+  `is_active` tinyint(1) NOT NULL DEFAULT 1,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `admins`
+--
+
+INSERT INTO `admins` (`id`, `name`, `email`, `password`, `role`, `business_name`, `business_type`, `phone`, `address`, `currency`, `avatar_color`, `is_active`, `created_at`, `updated_at`) VALUES
+(6, 'Rick Warren Nicasio', '2401107842@student.buksu.edu.ph', '$2y$10$Xz4xvkTOFYoS5m0vLRaK4O1GaCaRA.8EF9jk/ogqPjinmcyyBk6IK', 'owner', 'Monkey Business', NULL, NULL, NULL, 'PHP', '#9B1D1D', 1, '2026-04-30 11:45:48', '2026-04-30 11:50:01');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `categories`
+--
+
+CREATE TABLE `categories` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'NULL = global default',
+  `name` varchar(100) NOT NULL,
+  `type` enum('income','expense') NOT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `categories`
+--
+
+INSERT INTO `categories` (`id`, `user_id`, `name`, `type`, `is_default`) VALUES
+(1, NULL, 'Sales', 'income', 1),
+(2, NULL, 'Service Revenue', 'income', 1),
+(3, NULL, 'Refunds', 'income', 1),
+(4, NULL, 'Other Income', 'income', 1),
+(5, NULL, 'Cloud Hosting', 'expense', 1),
+(6, NULL, 'SMS Services', 'expense', 1),
+(7, NULL, 'Marketing', 'expense', 1),
+(8, NULL, 'Salaries', 'expense', 1),
+(9, NULL, 'Inventory', 'expense', 1),
+(10, NULL, 'Rent', 'expense', 1),
+(11, NULL, 'Utilities', 'expense', 1),
+(12, NULL, 'Operations', 'expense', 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `clients`
+--
+
+CREATE TABLE `clients` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `import_logs`
+--
+
+CREATE TABLE `import_logs` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `filename` varchar(255) DEFAULT NULL,
+  `total_rows` int(11) NOT NULL DEFAULT 0,
+  `imported_rows` int(11) NOT NULL DEFAULT 0,
+  `failed_rows` int(11) NOT NULL DEFAULT 0,
+  `status` enum('success','partial','failed') NOT NULL DEFAULT 'success',
+  `error_log` text DEFAULT NULL,
+  `imported_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `settings`
+--
+
+CREATE TABLE `settings` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `business_name` varchar(200) DEFAULT NULL,
+  `business_type` varchar(100) DEFAULT NULL,
+  `currency` varchar(5) NOT NULL DEFAULT 'PHP',
+  `fiscal_year_start` varchar(20) NOT NULL DEFAULT 'January',
+  `tax_rate` decimal(5,2) NOT NULL DEFAULT 12.00,
+  `email_notifications` tinyint(1) NOT NULL DEFAULT 1,
+  `sms_notifications` tinyint(1) NOT NULL DEFAULT 0,
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `settings`
+--
+
+INSERT INTO `settings` (`id`, `user_id`, `business_name`, `business_type`, `currency`, `fiscal_year_start`, `tax_rate`, `email_notifications`, `sms_notifications`, `updated_at`) VALUES
+(6, 6, NULL, NULL, 'PHP', 'January', 12.00, 1, 0, '2026-04-30 11:45:48');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `templates`
+--
+
+CREATE TABLE `templates` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `name` varchar(150) NOT NULL,
+  `description` text DEFAULT NULL,
+  `icon` varchar(10) NOT NULL DEFAULT '?',
+  `usage_count` int(11) NOT NULL DEFAULT 0,
+  `is_featured` tinyint(1) NOT NULL DEFAULT 0,
+  `sort_order` int(11) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `templates`
+--
+
+INSERT INTO `templates` (`id`, `name`, `description`, `icon`, `usage_count`, `is_featured`, `sort_order`, `created_at`) VALUES
+(1, 'Daily Cash Flow', 'Track daily income and expenses. Great for sari-sari stores and market vendors.', '📒', 1240, 1, 1, '2026-04-29 14:52:02'),
+(2, 'Accounts Payable', 'Monitor what you owe suppliers. Never miss a payment deadline again.', '🧾', 870, 0, 2, '2026-04-29 14:52:02'),
+(3, 'Accounts Receivable', 'Track what clients owe you. Send reminders and monitor overdue invoices.', '📬', 930, 0, 3, '2026-04-29 14:52:02'),
+(4, 'Inventory Log', 'Record stock levels, restock dates, and item costs in one organized view.', '📦', 640, 0, 4, '2026-04-29 14:52:02'),
+(5, 'Monthly P&L', 'Auto-summarizes income vs expenses. Share with your accountant or bank.', '📊', 510, 0, 5, '2026-04-29 14:52:02'),
+(6, 'Payroll Register', 'Manage employee salaries, deductions, and net pay per pay period.', '🏦', 390, 0, 6, '2026-04-29 14:52:02');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transactions`
+--
+
+CREATE TABLE `transactions` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `client_id` int(10) UNSIGNED DEFAULT NULL,
+  `category_id` int(10) UNSIGNED DEFAULT NULL,
+  `invoice_no` varchar(50) DEFAULT NULL,
+  `description` varchar(255) NOT NULL,
+  `amount` decimal(14,2) NOT NULL,
+  `type` enum('income','expense') NOT NULL,
+  `status` enum('paid','pending','overdue') NOT NULL DEFAULT 'pending',
+  `transaction_date` date NOT NULL,
+  `notes` text DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Indexes for dumped tables
+--
+
+--
+-- Indexes for table `admins`
+--
+ALTER TABLE `admins`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `email` (`email`);
+
+--
+-- Indexes for table `categories`
+--
+ALTER TABLE `categories`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_categories_user` (`user_id`);
+
+--
+-- Indexes for table `clients`
+--
+ALTER TABLE `clients`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_clients_user` (`user_id`);
+
+--
+-- Indexes for table `import_logs`
+--
+ALTER TABLE `import_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_log_user` (`user_id`);
+
+--
+-- Indexes for table `settings`
+--
+ALTER TABLE `settings`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `user_id` (`user_id`);
+
+--
+-- Indexes for table `templates`
+--
+ALTER TABLE `templates`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_tx_client` (`client_id`),
+  ADD KEY `fk_tx_category` (`category_id`),
+  ADD KEY `idx_user_date` (`user_id`,`transaction_date`),
+  ADD KEY `idx_type` (`type`),
+  ADD KEY `idx_status` (`status`);
+
+--
+-- AUTO_INCREMENT for dumped tables
+--
+
+--
+-- AUTO_INCREMENT for table `admins`
+--
+ALTER TABLE `admins`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `categories`
+--
+ALTER TABLE `categories`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+
+--
+-- AUTO_INCREMENT for table `clients`
+--
+ALTER TABLE `clients`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- AUTO_INCREMENT for table `import_logs`
+--
+ALTER TABLE `import_logs`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `settings`
+--
+ALTER TABLE `settings`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `templates`
+--
+ALTER TABLE `templates`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+
+--
+-- AUTO_INCREMENT for table `transactions`
+--
+ALTER TABLE `transactions`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+
+--
+-- Constraints for dumped tables
+--
+
+--
+-- Constraints for table `categories`
+--
+ALTER TABLE `categories`
+  ADD CONSTRAINT `fk_categories_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `clients`
+--
+ALTER TABLE `clients`
+  ADD CONSTRAINT `fk_clients_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `import_logs`
+--
+ALTER TABLE `import_logs`
+  ADD CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `settings`
+--
+ALTER TABLE `settings`
+  ADD CONSTRAINT `fk_settings_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `transactions`
+--
+ALTER TABLE `transactions`
+  ADD CONSTRAINT `fk_tx_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_tx_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_tx_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+COMMIT;
+
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+
+
+
+================================================
+FILE: EntryFlow/index.php
+================================================
+<?php
+session_start();
+require_once 'config.php';
+requireLogin();
+
+$db   = getDB();
+$userId  = (int)$_SESSION['user_id'];
+
+// 1. Fetch Dashboard Statistics
+$curMonth = date('Y-m');
+$statsQuery = $db->query("SELECT type, SUM(amount) AS t FROM transactions WHERE user_id=$userId AND DATE_FORMAT(transaction_date,'%Y-%m')='$curMonth' GROUP BY type");
+
+$totals = ['income' => 0, 'expense' => 0];
+foreach ($statsQuery->fetch_all(MYSQLI_ASSOC) as $row) {
+    $totals[$row['type']] = (float)$row['t'];
+}
+
+$grossProfit = $totals['income'] - $totals['expense'];
+$pendingCnt  = (int)$db->query("SELECT COUNT(*) FROM transactions WHERE user_id=$userId AND status='pending'")->fetch_row()[0];
+$clientCnt   = (int)$db->query("SELECT COUNT(*) FROM clients WHERE user_id=$userId")->fetch_row()[0];
+
+// 2. Fetch Recent 5 Transactions
+$recentTx = $db->query("
+    SELECT t.id, t.description, t.amount, t.type, t.status, t.transaction_date, t.invoice_no, 
+           c.name AS client_name, cat.name AS category_name
+    FROM transactions t
+    LEFT JOIN clients c ON c.id=t.client_id
+    LEFT JOIN categories cat ON cat.id=t.category_id
+    WHERE t.user_id=$userId 
+    ORDER BY t.transaction_date DESC, t.id DESC LIMIT 5
+")->fetch_all(MYSQLI_ASSOC);
+
+include 'includes/header.php'; 
+?>
+
+<div class="grid">
+    <div class="card card-income">
+        <h3>Gross Income</h3>
+        <h2>₱<?= number_format($totals['income'], 2) ?></h2>
+    </div>
+    
+    <div class="card card-expense">
+        <h3>Total Expenses</h3>
+        <h2>₱<?= number_format($totals['expense'], 2) ?></h2>
+    </div>
+    
+    <div class="card card-profit">
+        <h3>Net Profit</h3>
+        <h2>₱<?= number_format($grossProfit, 2) ?></h2>
+    </div>
+    
+    <div class="card card-pending">
+        <h3>Pending Transactions</h3>
+        <h2><?= $pendingCnt ?></h2>
+    </div>
+</div>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px;">
+    <h3>Recent Transactions</h3>
+    <button class="btn btn-primary" onclick="openModal('transactionModal')">+ Add New</button>
+</div>
+
+<div class="tc">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Client</th>
+                <th>Amount</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($recentTx)): ?>
+                <tr><td colspan="6" style="text-align: center; padding: 20px; color: var(--text-muted);">No recent transactions</td></tr>
+            <?php else: ?>
+                <?php foreach ($recentTx as $tx): ?>
+                    <tr>
+                        <td><?= date('M d, Y', strtotime($tx['transaction_date'])) ?></td>
+                        <td class="tdn">
+                            <?= htmlspecialchars($tx['description']) ?>
+                            <?php if ($tx['invoice_no']): ?><div class="tds">Inv: <?= htmlspecialchars($tx['invoice_no']) ?></div><?php endif; ?>
+                        </td>
+                        <td><?= htmlspecialchars($tx['category_name'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($tx['client_name'] ?? '—') ?></td>
+                        <td class="<?= $tx['type'] === 'income' ? 'ap' : 'an' ?>">
+                            <?= $tx['type'] === 'income' ? '+' : '-' ?>₱<?= number_format($tx['amount'], 2) ?>
+                        </td>
+                        <td>
+                            <?php $statusClass = $tx['status'] === 'paid' ? 'bp2' : ($tx['status'] === 'pending' ? 'bpd' : 'bod'); ?>
+                            <span class="badge <?= $statusClass ?>"><?= ucfirst($tx['status']) ?></span>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<?php include 'includes/footer.php'; ?>
+
+
+================================================
+FILE: EntryFlow/login.php
+================================================
+<?php
+session_start();
+if (!empty($_SESSION['user_id'])) { header('Location: index.php'); exit; }
+require_once 'config.php';
+
+$error = '';
+$mode  = $_POST['mode'] ?? 'login';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $db    = getDB();
+    $email = trim($_POST['email'] ?? '');
+    $pass  = $_POST['password'] ?? '';
+
+    if ($mode === 'login') {
+        $stmt = $db->prepare("SELECT id, name, password, business_name FROM admins WHERE email = ? AND is_active = 1");
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+        $user = $stmt->get_result()->fetch_assoc();
+        if ($user && password_verify($pass, $user['password'])) {
+            $_SESSION['user_id']      = $user['id'];
+            $_SESSION['user_name']    = $user['name'];
+            $_SESSION['business']     = $user['business_name'];
+            header('Location: index.php');
+            exit;
+        }
+        $error = 'Wrong email or password.';
+
+    } elseif ($mode === 'register') {
+        $name = trim($_POST['name'] ?? '');
+        $biz  = trim($_POST['business_name'] ?? '');
+        if (!$name || !$email || !$pass || !$biz) {
+            $error = 'All fields are required.';
+        } elseif (strlen($pass) < 6) {
+            $error = 'Password must be at least 6 characters.';
+        } else {
+            // Check if email exists
+            $stmt = $db->prepare("SELECT id FROM admins WHERE email = ?");
+            $stmt->bind_param('s', $email);
+            $stmt->execute();
+            if ($stmt->get_result()->num_rows > 0) {
+                $error = 'Email is already registered.';
+            } else {
+                $hash = password_hash($pass, PASSWORD_BCRYPT);
+                $stmt = $db->prepare("INSERT INTO admins (name, email, password, business_name) VALUES (?, ?, ?, ?)");
+                $stmt->bind_param('ssss', $name, $email, $hash, $biz);
+                if ($stmt->execute()) {
+                    $_SESSION['user_id']   = $db->insert_id;
+                    $_SESSION['user_name'] = $name;
+                    $_SESSION['business']  = $biz;
+                    // Insert default settings
+                    $db->query("INSERT INTO settings (user_id) VALUES ({$_SESSION['user_id']})");
+                    header('Location: index.php');
+                    exit;
+                } else {
+                    $error = 'Registration failed. Try again.';
+                }
+            }
+        }
+    }
+}
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EntryFlow — Authentication</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/style.css">
+    <style>
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            background-color: var(--bg-main);
+            margin: 0;
+            padding: 20px;
+        }
+        .auth-box {
+            background: var(--surface-1);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.4);
+        }
+        .auth-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .logo {
+            font-family: 'DM Serif Display', serif;
+            font-size: 32px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+        .logo-dot {
+            width: 14px;
+            height: 14px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .tab {
+            flex: 1;
+            text-align: center;
+            padding: 12px;
+            cursor: pointer;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: all 0.2s ease;
+            font-size: 15px;
+        }
+        .tab.active {
+            color: var(--primary-light);
+            border-bottom: 2px solid var(--primary);
+        }
+        .pane {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .pane.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 13px;
+            color: var(--text-muted);
+        }
+        .form-group input {
+            width: 100%;
+            background: var(--surface-2);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+        .btn-block {
+            width: 100%;
+            padding: 14px;
+            font-size: 15px;
+            margin-top: 10px;
+            justify-content: center;
+            border-radius: 8px;
+        }
+        .alert-error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .hint {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-muted);
+            margin-top: 24px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+        .hint b {
+            color: var(--text-main);
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+
+<div class="auth-box">
+    <div class="auth-header">
+        <div class="logo"><div class="logo-dot"></div> EntryFlow</div>
+    </div>
+
+    <?php if ($error): ?>
+        <div class="alert-error"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
+
+    <div class="tabs">
+        <div class="tab <?= $mode === 'login' ? 'active' : '' ?>" onclick="show('pane-login', this)">Sign In</div>
+        <div class="tab <?= $mode === 'register' ? 'active' : '' ?>" onclick="show('pane-register', this)">Create Account</div>
+    </div>
+
+    <div class="pane <?= $mode === 'login' ? 'active' : '' ?>" id="pane-login">
+        <form method="POST">
+            <input type="hidden" name="mode" value="login" />
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="you@email.com" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" name="password" placeholder="••••••••" required />
+            </div>
+            <button class="btn btn-primary btn-block" type="submit">Sign In to Dashboard</button>
+        </form>
+    </div>
+
+    <div class="pane <?= $mode === 'register' ? 'active' : '' ?>" id="pane-register">
+        <form method="POST">
+            <input type="hidden" name="mode" value="register" />
+            <div class="form-group">
+                <label>Full Name</label>
+                <input type="text" name="name" placeholder="Your name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>" />
+            </div>
+            <div class="form-group">
+                <label>Business Name</label>
+                <input type="text" name="business_name" placeholder="Your business name" required value="<?= htmlspecialchars($_POST['business_name'] ?? '') ?>" />
+            </div>
+            <div class="form-group">
+                <label>Email Address</label>
+                <input type="email" name="email" placeholder="you@email.com" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" />
+            </div>
+            <div class="form-group">
+                <label>Password <span style="font-size: 11px; color: var(--text-muted);">(min 6 chars)</span></label>
+                <input type="password" name="password" placeholder="••••••••" required />
+            </div>
+            <button class="btn btn-primary btn-block" type="submit">Create Account</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function show(paneId, el) {
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(paneId).classList.add('active');
+    el.classList.add('active');
+}
+</script>
+
+</body>
+</html>
+
+
+================================================
+FILE: EntryFlow/logout.php
+================================================
+<?php
+session_start();
+session_destroy();
+header('Location: login.php');
+exit;
+
+
+
+================================================
+FILE: EntryFlow/reports.php
+================================================
+<?php
+session_start();
+require_once 'config.php';
+requireLogin();
+
+$db = getDB();
+$userId = (int)$_SESSION['user_id'];
+
+// SECURED: Escaping the input to prevent SQL Injection
+$selectedMonth = $db->real_escape_string($_GET['month'] ?? date('Y-m'));
+
+// Fetch totals for the selected month
+$query = "
+    SELECT type, SUM(amount) AS total 
+    FROM transactions 
+    WHERE user_id = $userId AND DATE_FORMAT(transaction_date, '%Y-%m') = '$selectedMonth'
+    GROUP BY type
+";
+$result = $db->query($query);
+$totals = ['income' => 0, 'expense' => 0];
+
+while ($row = $result->fetch_assoc()) {
+    $totals[$row['type']] = (float)$row['total'];
+}
+
+$grossProfit = $totals['income'] - $totals['expense'];
+
+include 'includes/header.php'; 
+?>
+
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <form method="GET" action="reports.php" style="display: flex; gap: 10px; align-items: center;">
+        <label for="month" style="font-size: 14px;">Select Month:</label>
+        <input type="month" name="month" id="month" class="sb" value="<?= htmlspecialchars($selectedMonth) ?>">
+        <button type="submit" class="btn btn-primary">Generate</button>
+    </form>
+
+    <a href="api/reports.php?export=csv&month=<?= $selectedMonth ?>" class="btn" style="background: var(--surface-2); color: var(--text-main); text-decoration: none;">
+        📥 Export to CSV
+    </a>
+</div>
+
+<div class="grid-3">
+    <div class="card card-income">
+        <h3>Total Income</h3>
+        <h2>₱<?= number_format($totals['income'], 2) ?></h2>
+    </div>
+    
+    <div class="card card-expense">
+        <h3>Total Expenses</h3>
+        <h2>₱<?= number_format($totals['expense'], 2) ?></h2>
+    </div>
+    
+    <div class="card card-profit">
+        <h3>Gross Profit</h3>
+        <h2>₱<?= number_format($grossProfit, 2) ?></h2>
+    </div>
+</div>
+
+<div class="tc" style="padding: 20px; background: var(--surface-1); border-radius: 12px;">
+    <h3>Report Summary for <?= date('F Y', strtotime($selectedMonth . '-01')) ?></h3>
+    <p style="color: var(--text-muted); margin-top: 10px;">
+        Use the Export button above to download a detailed CSV file of all transactions for this period. 
+        This data is fetched directly from the database and calculated securely via PHP.
+    </p>
+</div>
+
+<?php include 'includes/footer.php'; ?>
+
+
+================================================
+FILE: EntryFlow/settings.php
+================================================
+<?php
+session_start();
+require_once 'config.php';
+requireLogin();
+
+$db = getDB();
+$userId = (int)$_SESSION['user_id'];
+
+// Fetch current admin profile data
+$userQuery = $db->query("SELECT * FROM admins WHERE id = $userId");
+$user = $userQuery->fetch_assoc();
+
+include 'includes/header.php'; 
+?>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    
+    <div style="background: var(--surface-1); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 20px; color: var(--primary-light);">User Profile</h3>
+        <form id="profileForm">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Full Name *</label>
+                <input type="text" id="p_name" class="sb" value="<?= htmlspecialchars($user['name'] ?? '') ?>" required style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Email Address *</label>
+                <input type="email" id="p_email" class="sb" value="<?= htmlspecialchars($user['email'] ?? '') ?>" required style="width: 100%;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Phone Number</label>
+                    <input type="text" id="p_phone" class="sb" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Physical Address</label>
+                    <input type="text" id="p_address" class="sb" value="<?= htmlspecialchars($user['address'] ?? '') ?>" style="width: 100%;">
+                </div>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+            <h4 style="margin-bottom: 15px; color: var(--text-main); font-size: 14px;">Change Password</h4>
+            
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Current Password (Required only if changing password)</label>
+                <input type="password" id="p_current_pass" class="sb" placeholder="••••••••" style="width: 100%;">
+            </div>
+            <div style="margin-bottom: 20px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">New Password</label>
+                <input type="password" id="p_new_pass" class="sb" placeholder="••••••••" style="width: 100%;">
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Update Profile</button>
+        </form>
+    </div>
+
+    <div style="background: var(--surface-1); padding: 24px; border-radius: 12px; border: 1px solid var(--border-color);">
+        <h3 style="margin-bottom: 20px; color: var(--primary-light);">Business Information</h3>
+        <form id="businessForm">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Business Name *</label>
+                <input type="text" id="b_name" class="sb" value="<?= htmlspecialchars($user['business_name'] ?? '') ?>" required style="width: 100%;">
+            </div>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Business Type</label>
+                    <input type="text" id="b_type" class="sb" value="<?= htmlspecialchars($user['business_type'] ?? '') ?>" placeholder="e.g. Freelance, Retail" style="width: 100%;">
+                </div>
+                <div style="flex: 1;">
+                    <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Default Currency</label>
+                    <select id="b_currency" class="sb" style="width: 100%;">
+                        <option value="PHP" <?= ($user['currency'] === 'PHP') ? 'selected' : '' ?>>PHP - Philippine Peso</option>
+                        <option value="USD" <?= ($user['currency'] === 'USD') ? 'selected' : '' ?>>USD - US Dollar</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 10px;">Save Business Settings</button>
+        </form>
+    </div>
+</div>
+
+<script>
+// Logic to handle form submissions via your API
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        name: document.getElementById('p_name').value,
+        email: document.getElementById('p_email').value,
+        phone: document.getElementById('p_phone').value,
+        address: document.getElementById('p_address').value,
+        current_password: document.getElementById('p_current_pass').value,
+        new_password: document.getElementById('p_new_pass').value
+    };
+
+    try {
+        const res = await fetch('api/settings.php?action=profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('Profile updated successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (err) {
+        alert('Network error while updating profile.');
+    }
+});
+
+document.getElementById('businessForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const payload = {
+        business_name: document.getElementById('b_name').value,
+        business_type: document.getElementById('b_type').value,
+        currency: document.getElementById('b_currency').value
+    };
+
+    try {
+        const res = await fetch('api/settings.php?action=settings', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const result = await res.json();
+        if (result.success) {
+            alert('Business settings updated successfully!');
+            window.location.reload();
+        } else {
+            alert('Error: ' + result.error);
+        }
+    } catch (err) {
+        alert('Network error while updating business settings.');
+    }
+});
+</script>
+
+<?php include 'includes/footer.php'; ?>
+
+
+================================================
+FILE: EntryFlow/setup.php
+================================================
+<?php
+/**
+ * EntryFlow — First-Time Setup Script
+ * ────────────────────────────────────
+ * Run this ONCE at http://localhost/entryflow/setup.php
+ * Then DELETE this file from your server for security.
+ */
+
+$host = 'localhost';
+$user = 'root';
+$pass = '';   // ← change if your MySQL has a password
+$port = 3306;
+
+$conn = new mysqli($host, $user, $pass, '', $port);
+if ($conn->connect_error) {
+    die('<b>Connection failed:</b> ' . $conn->connect_error);
+}
+
+$log = [];
+
+function run(mysqli $db, string $sql, string $label): void {
+    global $log;
+    if ($db->multi_query($sql)) {
+        do { if ($r = $db->store_result()) $r->free(); } while ($db->next_result());
+        $log[] = "✅ $label";
+    } else {
+        $log[] = "❌ $label — " . $db->error;
+    }
+}
+
+// ── Create + use DB ──────────────────────────────────────────
+$conn->query("CREATE DATABASE IF NOT EXISTS Entryflow_DB CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+$conn->select_db('Entryflow_DB');
+$log[] = '✅ Database Entryflow_DB ready';
+
+// ── Load and run schema SQL ──────────────────────────────────
+$schema = file_get_contents(__DIR__ . '/entryflow_db.sql');
+// Strip "USE Entryflow_DB;" lines already handled above
+$schema = preg_replace('/^USE\s+Entryflow_DB\s*;/mi', '', $schema);
+// Split and run each statement
+$stmts = array_filter(array_map('trim', explode(';', $schema)));
+foreach ($stmts as $s) {
+    if ($s === '') continue;
+    if (!$conn->query($s)) {
+        $log[] = "⚠️ Schema stmt skipped: " . $conn->error . "<br><small>" . htmlspecialchars(substr($s, 0, 80)) . "…</small>";
+    }
+}
+$log[] = '✅ Schema tables created';
+
+// ── Demo user ────────────────────────────────────────────────
+$demoPass = password_hash('password123', PASSWORD_BCRYPT);
+$stmt = $conn->prepare("INSERT IGNORE INTO users (name, email, password, role, business_name, business_type, phone, currency)
+    VALUES (?, ?, ?, 'owner', ?, 'Retail & Food', '+63-912-345-6789', 'PHP')");
+$name = "Zette Reyes";
+$email = "zette@entryflow.ph";
+$biz   = "Zette's Kitchen Supplies";
+$stmt->bind_param('ssss', $name, $email, $demoPass, $biz);
+$stmt->execute();
+$userId = $conn->insert_id ?: 1;
+$log[] = "✅ Demo user created (email: zette@entryflow.ph / password: password123)";
+
+// ── Demo settings ────────────────────────────────────────────
+$conn->query("INSERT IGNORE INTO settings (user_id, business_name, business_type, currency, tax_rate)
+    VALUES ($userId, 'Zette\\'s Kitchen Supplies', 'Retail & Food', 'PHP', 12.00)");
+$log[] = '✅ Settings created';
+
+// ── Demo clients ─────────────────────────────────────────────
+$clients = [
+    ["Dela Cruz Store",  "delacruz@gmail.com",       "09171234567", "Brgy. Poblacion, Malaybalay City"],
+    ["Santos Market",    "santos.market@yahoo.com",   "09281234567", "Brgy. Casisang, Malaybalay City"],
+    ["Reyes Grocery",   "reyesgrocery@gmail.com",    "09351234567", "Brgy. Aglayan, Malaybalay City"],
+    ["Flores Bakery",   "floresbakery@gmail.com",    "09461234567", "Brgy. Sumpong, Malaybalay City"],
+];
+$stmt = $conn->prepare("INSERT IGNORE INTO clients (user_id, name, email, phone, address) VALUES (?,?,?,?,?)");
+foreach ($clients as $c) {
+    $stmt->bind_param('issss', $userId, $c[0], $c[1], $c[2], $c[3]);
+    $stmt->execute();
+}
+$log[] = '✅ Demo clients created';
+
+// ── Demo transactions ─────────────────────────────────────────
+$txRows = [
+    [1, 1, 'INV-1042', 'Product Sales — Batch 12',      12500, 'income',  'paid',    '2025-04-22'],
+    [1, null, null,    'Freelance Developer',            20000, 'expense', 'paid',    '2025-04-20'],
+    [1, null, null,    'Inventory Restock - AgroMart',   8300, 'expense', 'pending', '2025-04-19'],
+    [1, 2,    'INV-1041', 'Client: Santos Market Order', 5750, 'income',  'overdue', '2025-04-18'],
+    [1, null, null,    'Cloud Hosting — AWS',             3000, 'expense', 'paid',    '2025-04-15'],
+    [1, null, null,    'SMS Notification Service',        1000, 'expense', 'paid',    '2025-04-10'],
+    [1, 3,    'INV-1040', 'Reyes Grocery - Service Fee', 8000, 'income',  'paid',    '2025-04-08'],
+    [1, null, null,    'Facebook Ads Marketing',          5000, 'expense', 'paid',    '2025-04-05'],
+    [1, 4,    'INV-1039', 'Flores Bakery Order',         15000, 'income',  'paid',    '2025-04-03'],
+    [1, null, null,    'Staff Salary - April',           15000, 'expense', 'paid',    '2025-04-01'],
+    [1, 1,    'INV-1038', 'Product Sales — Batch 11',    9800, 'income',  'paid',    '2025-03-25'],
+    [1, null, null,    'Cloud Hosting — AWS',             3000, 'expense', 'paid',    '2025-03-15'],
+    [1, 2,    'INV-1037', 'Santos Market March Order',   6500, 'income',  'paid',    '2025-03-10'],
+    [1, null, null,    'Staff Salary - March',           15000, 'expense', 'paid',    '2025-03-01'],
+];
+
+// Get actual client IDs from DB
+$cRes = $conn->query("SELECT id FROM clients WHERE user_id=$userId ORDER BY id LIMIT 4");
+$cIds = [];
+while ($r = $cRes->fetch_row()) $cIds[] = $r[0];
+
+$stmt = $conn->prepare("INSERT INTO transactions (user_id, client_id, invoice_no, description, amount, type, status, transaction_date) VALUES (?,?,?,?,?,?,?,?)");
+foreach ($txRows as $tx) {
+    $cId = $tx[1] ? ($cIds[$tx[1]-1] ?? null) : null;
+    $stmt->bind_param('iissdss s', $userId, $cId, $tx[2], $tx[3], $tx[4], $tx[5], $tx[6], $tx[7]);
+    $stmt->execute();
+}
+$log[] = '✅ Demo transactions created';
+
+$conn->close();
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>EntryFlow Setup</title>
+<style>
+  body { font-family: monospace; background: #0F0D0D; color: #F2EDE9; padding: 40px; }
+  h1   { color: #C53030; }
+  li   { margin: 6px 0; font-size: 14px; }
+  .done { margin-top: 24px; background: #1A1717; border: 1px solid #2E2626; padding: 20px; border-radius: 8px; }
+  a    { color: #E07030; }
+  .warn { color: #E07030; font-size: 13px; margin-top: 16px; }
+</style>
+</head>
+<body>
+<h1>⚙ EntryFlow Setup</h1>
+<ul>
+<?php foreach ($log as $l) echo "<li>$l</li>"; ?>
+</ul>
+<div class="done">
+  <strong>Setup complete!</strong><br><br>
+  Demo login: <b>zette@entryflow.ph</b> / <b>password123</b><br><br>
+  <a href="login.php">→ Go to Login</a>
+</div>
+<p class="warn">⚠️ Delete or rename setup.php after setup for security.</p>
+</body>
+</html>
+
+
+
+================================================
+FILE: EntryFlow/transactions.php
+================================================
+<?php
+session_start();
+require_once 'config.php';
+requireLogin();
+
+$db = getDB();
+$userId = (int)$_SESSION['user_id'];
+
+$search = $_GET['search'] ?? '';
+$typeFilter = $_GET['type'] ?? '';
+
+$query = "
+    SELECT t.*, c.name AS client_name, cat.name AS category_name
+    FROM transactions t
+    LEFT JOIN clients c ON c.id = t.client_id
+    LEFT JOIN categories cat ON cat.id = t.category_id
+    WHERE t.user_id = $userId
+";
+
+if ($search !== '') {
+    $searchEscaped = $db->real_escape_string($search);
+    $query .= " AND t.description LIKE '%$searchEscaped%'";
+}
+if ($typeFilter === 'income' || $typeFilter === 'expense') {
+    $query .= " AND t.type = '$typeFilter'";
+}
+$query .= " ORDER BY t.transaction_date DESC, t.id DESC";
+$transactions = $db->query($query)->fetch_all(MYSQLI_ASSOC);
+
+include 'includes/header.php'; 
+?>
+
+<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+    <form method="GET" action="transactions.php" style="display: flex; gap: 10px;">
+        <input type="text" name="search" class="sb" placeholder="Search description..." value="<?= htmlspecialchars($search) ?>">
+        <select name="type" class="sb" style="width: auto;">
+            <option value="">All Types</option>
+            <option value="income" <?= $typeFilter === 'income' ? 'selected' : '' ?>>Income</option>
+            <option value="expense" <?= $typeFilter === 'expense' ? 'selected' : '' ?>>Expense</option>
+        </select>
+        <button type="submit" class="btn btn-primary">Filter</button>
+        <?php if($search || $typeFilter): ?>
+            <a href="transactions.php" class="btn" style="background: var(--surface-2); color: var(--text-main); text-decoration: none;">Clear</a>
+        <?php endif; ?>
+    </form>
+    
+    <button class="btn btn-primary" onclick="openModal('transactionModal')">+ Add Transaction</button>
+</div>
+
+<div class="tc">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Client</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php if (empty($transactions)): ?>
+                <tr>
+                    <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">No transactions found.</td>
+                </tr>
+            <?php else: ?>
+                <?php foreach ($transactions as $tx): ?>
+                    <tr>
+                        <td><?= date('M d, Y', strtotime($tx['transaction_date'])) ?></td>
+                        <td class="tdn">
+                            <?= htmlspecialchars($tx['description']) ?>
+                            <?php if ($tx['invoice_no']): ?><div class="tds">Inv: <?= htmlspecialchars($tx['invoice_no']) ?></div><?php endif; ?>
+                        </td>
+                        <td><?= htmlspecialchars($tx['category_name'] ?? '—') ?></td>
+                        <td><?= htmlspecialchars($tx['client_name'] ?? '—') ?></td>
+                        <td class="<?= $tx['type'] === 'income' ? 'ap' : 'an' ?>">
+                            <?= $tx['type'] === 'income' ? '+' : '-' ?>₱<?= number_format($tx['amount'], 2) ?>
+                        </td>
+                        <td>
+                            <?php $statusClass = $tx['status'] === 'paid' ? 'bp2' : ($tx['status'] === 'pending' ? 'bpd' : 'bod'); ?>
+                            <span class="badge <?= $statusClass ?>"><?= ucfirst($tx['status']) ?></span>
+                        </td>
+                        <td style="display: flex; gap: 5px;">
+                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
+                                onclick="editTransaction(this)"
+                                data-id="<?= $tx['id'] ?>"
+                                data-desc="<?= htmlspecialchars($tx['description']) ?>"
+                                data-inv="<?= htmlspecialchars($tx['invoice_no'] ?? '') ?>"
+                                data-amount="<?= $tx['amount'] ?>"
+                                data-type="<?= $tx['type'] ?>"
+                                data-cat="<?= $tx['category_id'] ?? '' ?>"
+                                data-client="<?= $tx['client_id'] ?? '' ?>"
+                                data-date="<?= $tx['transaction_date'] ?>"
+                                data-status="<?= $tx['status'] ?>"
+                                data-notes="<?= htmlspecialchars($tx['notes'] ?? '') ?>"
+                            >Edit</button>
+                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
+                                onclick="confirmDelete('transaction', <?= $tx['id'] ?>)">Delete</button>
+                        </td>
+                    </tr>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </tbody>
+    </table>
+</div>
+
+<?php include 'includes/footer.php'; ?>
+
+
+================================================
+FILE: EntryFlow/api/clients.php
+================================================
+<?php
+require_once '../config.php';
+requireLogin();
+
+$db  = getDB();
+$uid = (int)$_SESSION['user_id'];
+$method = $_SERVER['REQUEST_METHOD'];
+
+if ($method === 'GET') {
+    $search = !empty($_GET['search']) ? '%' . $_GET['search'] . '%' : null;
+    if ($search) {
+        $stmt = $db->prepare("SELECT * FROM clients WHERE user_id=? AND name LIKE ? ORDER BY name");
+        $stmt->bind_param('is', $uid, $search);
+    } else {
+        $stmt = $db->prepare("SELECT c.*, COUNT(t.id) AS tx_count,
+            SUM(CASE WHEN t.type='income' THEN t.amount ELSE 0 END) AS total_revenue
+            FROM clients c
+            LEFT JOIN transactions t ON t.client_id = c.id AND t.user_id = ?
+            WHERE c.user_id=? GROUP BY c.id ORDER BY c.name");
+        $stmt->bind_param('ii', $uid, $uid);
+    }
+    $stmt->execute();
+    jsonOk($stmt->get_result()->fetch_all(MYSQLI_ASSOC));
+}
+
+if ($method === 'POST') {
+    $data  = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+    $name  = trim($data['name']  ?? '');
+    $email = trim($data['email'] ?? '') ?: null;
+    $phone = trim($data['phone'] ?? '') ?: null;
+    $addr  = trim($data['address'] ?? '') ?: null;
+    $notes = trim($data['notes'] ?? '') ?: null;
+    if (!$name) jsonErr('Name required');
+    $stmt = $db->prepare("INSERT INTO clients (user_id, name, email, phone, address, notes) VALUES (?,?,?,?,?,?)");
+    $stmt->bind_param('isssss', $uid, $name, $email, $phone, $addr, $notes);
+    $stmt->execute();
+    jsonOk(['id' => $db->insert_id]);
+}
+
+if ($method === 'PUT') {
+    $data  = json_decode(file_get_contents('php://input'), true);
+    $id    = (int)($data['id'] ?? 0);
+    $name  = trim($data['name']  ?? '');
+    $email = trim($data['email'] ?? '') ?: null;
+    $phone = trim($data['phone'] ?? '') ?: null;
+    $addr  = trim($data['address'] ?? '') ?: null;
+    $notes = trim($data['notes'] ?? '') ?: null;
+    if (!$id || !$name) jsonErr('ID and name required');
+    $stmt = $db->prepare("UPDATE clients SET name=?,email=?,phone=?,address=?,notes=? WHERE id=? AND user_id=?");
+    $stmt->bind_param('sssssii', $name, $email, $phone, $addr, $notes, $id, $uid);
+    $stmt->execute();
+    jsonOk(['message' => 'Updated']);
+}
+
+// ─── DELETE ──────────────────────────────────────────────────
+if ($method === 'DELETE') {
+    // Read the ID straight from the URL
+    $id = (int)($_GET['id'] ?? 0);
+
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Missing ID in request.']);
+        exit;
+    }
+
+    $sql = "DELETE FROM clients WHERE id = $id AND user_id = $uid";
+    
+    if ($db->query($sql)) {
+        echo json_encode(['success' => true, 'message' => 'Deleted successfully']);
+        exit;
+    } else {
+        // Protection: Warn the user if they try to delete a client that still has transactions
+        if (strpos($db->error, 'foreign key constraint') !== false) {
+            echo json_encode(['success' => false, 'error' => 'Cannot delete this client because they still have attached transactions.']);
+        } else {
+            echo json_encode(['success' => false, 'error' => 'Database Error: ' . $db->error]);
+        }
+        exit;
+    }
+}
+
+
+================================================
+FILE: EntryFlow/api/import.php
+================================================
+<?php
+require_once '../config.php';
+requireLogin();
+
+$db  = getDB();
+$uid = (int)$_SESSION['user_id'];
+
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') jsonErr('POST only');
+if (empty($_FILES['csv'])) jsonErr('No file uploaded');
+
+$file = $_FILES['csv'];
+if ($file['error'] !== UPLOAD_ERR_OK) jsonErr('Upload error: ' . $file['error']);
+if (strtolower(pathinfo($file['name'], PATHINFO_EXTENSION)) !== 'csv') jsonErr('Must be a .csv file');
+
+$handle = fopen($file['tmp_name'], 'r');
+if (!$handle) jsonErr('Cannot read file');
+
+// Expected columns (case-insensitive): date, description, amount, type, status, category, invoice_no, notes
+$headers = array_map(fn($h) => strtolower(trim($h)), fgetcsv($handle));
+
+$required = ['date','description','amount','type'];
+foreach ($required as $r) {
+    if (!in_array($r, $headers)) jsonErr("Missing column: $r (required: date, description, amount, type)");
+}
+
+$col = array_flip($headers);
+$total = $imported = $failed = 0;
+$errors = [];
+
+$stmt = $db->prepare(
+    "INSERT INTO transactions (user_id, invoice_no, description, amount, type, status, transaction_date, notes)
+     VALUES (?,?,?,?,?,?,?,?)"
+);
+
+while (($row = fgetcsv($handle)) !== false) {
+    $total++;
+    if (count($row) < count($required)) { $errors[] = "Row $total: too few columns"; $failed++; continue; }
+
+    $date   = trim($row[$col['date']]        ?? '');
+    $desc   = trim($row[$col['description']] ?? '');
+    $amount = (float)trim($row[$col['amount']] ?? 0);
+    $type   = strtolower(trim($row[$col['type']] ?? ''));
+    $status = strtolower(trim($row[$col['status'] ?? -1] ?? 'paid'));
+    $invNo  = trim($row[$col['invoice_no'] ?? -1] ?? '') ?: null;
+    $notes  = trim($row[$col['notes'] ?? -1] ?? '') ?: null;
+
+    // Validate
+    if (!$desc || $amount <= 0 || !in_array($type, ['income','expense'])) {
+        $errors[] = "Row $total: invalid data"; $failed++; continue;
+    }
+    if (!in_array($status, ['paid','pending','overdue'])) $status = 'paid';
+    $parsedDate = date('Y-m-d', strtotime($date));
+    if ($parsedDate === '1970-01-01') { $errors[] = "Row $total: bad date '$date'"; $failed++; continue; }
+
+    $stmt->bind_param('issdssss', $uid, $invNo, $desc, $amount, $type, $status, $parsedDate, $notes);
+    if ($stmt->execute()) { $imported++; } else { $errors[] = "Row $total: DB error"; $failed++; }
+}
+fclose($handle);
+
+// Log
+$filename = $file['name'];
+$logStatus = $failed === 0 ? 'success' : ($imported > 0 ? 'partial' : 'failed');
+$errLog = implode("\n", $errors) ?: null;
+$logStmt = $db->prepare("INSERT INTO import_logs (user_id, filename, total_rows, imported_rows, failed_rows, status, error_log) VALUES (?,?,?,?,?,?,?)");
+$logStmt->bind_param('isiiiss', $uid, $filename, $total, $imported, $failed, $logStatus, $errLog);
+$logStmt->execute();
+
+jsonOk([
+    'total'    => $total,
+    'imported' => $imported,
+    'failed'   => $failed,
+    'errors'   => $errors,
+    'status'   => $logStatus,
+]);
+
+
+
+================================================
+FILE: EntryFlow/api/reports.php
+================================================
+<?php
+require_once '../config.php';
+requireLogin();
+
+$db  = getDB();
+$uid = (int)$_SESSION['user_id'];
+
+$month = $_GET['month'] ?? date('Y-m');  // YYYY-MM
+$year  = $_GET['year']  ?? date('Y');
+
+// ─── CSV export ──────────────────────────────────────────────
+if (!empty($_GET['export']) && $_GET['export'] === 'csv') {
+    $period = !empty($_GET['month']) ? "DATE_FORMAT(t.transaction_date,'%Y-%m') = '$month'" : "YEAR(t.transaction_date) = '$year'";
+    $rows = $db->query("SELECT t.transaction_date, t.invoice_no, t.description, t.amount, t.type, t.status,
+                                c.name AS client, cat.name AS category
+                         FROM transactions t
+                         LEFT JOIN clients c ON c.id = t.client_id
+                         LEFT JOIN categories cat ON cat.id = t.category_id
+                         WHERE t.user_id = $uid AND $period
+                         ORDER BY t.transaction_date DESC")->fetch_all(MYSQLI_ASSOC);
+
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="entryflow-report-' . $month . '.csv"');
+    $out = fopen('php://output', 'w');
+    fputcsv($out, ['Date','Invoice No','Description','Amount','Type','Status','Client','Category']);
+    foreach ($rows as $r) fputcsv($out, $r);
+    fclose($out);
+    exit;
+}
+
+// ─── P&L summary ─────────────────────────────────────────────
+$period = "DATE_FORMAT(t.transaction_date, '%Y-%m') = ?";
+
+// Income / Expense totals
+$stmt = $db->prepare("SELECT type, SUM(amount) AS total FROM transactions t WHERE user_id=? AND $period GROUP BY type");
+$stmt->bind_param('is', $uid, $month);
+$stmt->execute();
+$totals = ['income' => 0, 'expense' => 0];
+foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $r) $totals[$r['type']] = (float)$r['total'];
+
+// Expenses by category
+$stmt = $db->prepare("SELECT COALESCE(cat.name, 'Uncategorized') AS cat, SUM(t.amount) AS total
+    FROM transactions t LEFT JOIN categories cat ON cat.id = t.category_id
+    WHERE t.user_id=? AND t.type='expense' AND $period GROUP BY cat.name ORDER BY total DESC");
+$stmt->bind_param('is', $uid, $month);
+$stmt->execute();
+$expByCat = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Income by category
+$stmt = $db->prepare("SELECT COALESCE(cat.name, 'Uncategorized') AS cat, SUM(t.amount) AS total
+    FROM transactions t LEFT JOIN categories cat ON cat.id = t.category_id
+    WHERE t.user_id=? AND t.type='income' AND $period GROUP BY cat.name ORDER BY total DESC");
+$stmt->bind_param('is', $uid, $month);
+$stmt->execute();
+$incByCat = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+
+// Monthly chart data — last 8 months
+$chartData = [];
+for ($i = 7; $i >= 0; $i--) {
+    $m = date('Y-m', strtotime("-$i months"));
+    $label = date('M', strtotime("-$i months"));
+    $res = $db->query("SELECT type, SUM(amount) AS t FROM transactions
+        WHERE user_id=$uid AND DATE_FORMAT(transaction_date,'%Y-%m')='$m' GROUP BY type");
+    $row = ['month' => $label, 'income' => 0, 'expense' => 0];
+    foreach ($res->fetch_all(MYSQLI_ASSOC) as $r) $row[$r['type']] = (float)$r['t'];
+    $chartData[] = $row;
+}
+
+// Pending / overdue counts
+$stmt = $db->prepare("SELECT status, COUNT(*) AS n FROM transactions WHERE user_id=? AND status!='paid' GROUP BY status");
+$stmt->bind_param('i', $uid);
+$stmt->execute();
+$statusCounts = [];
+foreach ($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $r) $statusCounts[$r['status']] = $r['n'];
+
+$gross = $totals['income'] - $totals['expense'];
+$settings = $db->query("SELECT tax_rate FROM settings WHERE user_id=$uid")->fetch_assoc();
+$taxRate = (float)($settings['tax_rate'] ?? 12);
+$taxAmt = $gross > 0 ? $gross * ($taxRate / 100) : 0;
+$net = $gross - $taxAmt;
+
+jsonOk([
+    'month'        => $month,
+    'income'       => $totals['income'],
+    'expense'      => $totals['expense'],
+    'gross_profit' => $gross,
+    'tax_rate'     => $taxRate,
+    'tax_amount'   => $taxAmt,
+    'net_profit'   => $net,
+    'income_by_cat'  => $incByCat,
+    'expense_by_cat' => $expByCat,
+    'chart_data'   => $chartData,
+    'status_counts'=> $statusCounts,
+]);
+
+
+
+================================================
+FILE: EntryFlow/api/settings.php
+================================================
+<?php
+require_once '../config.php';
+requireLogin();
+
+$db  = getDB();
+$uid = (int)$_SESSION['user_id'];
+$method = $_SERVER['REQUEST_METHOD'];
+$action = $_GET['action'] ?? 'settings';
+
+// ─── GET settings + profile ──────────────────────────────────
+if ($method === 'GET') {
+    $user = $db->query("SELECT id, name, email, business_name, business_type, phone, address, currency
+                         FROM admins WHERE id=$uid")->fetch_assoc();
+    jsonOk(['user' => $user]);
+}
+
+// ─── POST settings (Business Info) ───────────────────────────
+if ($method === 'POST' && $action === 'settings') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $bizName  = trim($data['business_name'] ?? '');
+    $bizType  = trim($data['business_type'] ?? '');
+    $currency = trim($data['currency'] ?? 'PHP');
+
+    // Update the admins table (Business Core Info)
+    $stmt = $db->prepare("UPDATE admins SET business_name=?, business_type=?, currency=? WHERE id=?");
+    $stmt->bind_param('sssi', $bizName, $bizType, $currency, $uid);
+    $stmt->execute();
+
+    // Update the session variable for business name so the sidebar updates instantly
+    $_SESSION['business'] = $bizName;
+
+    jsonOk(['message' => 'Settings updated']);
+}
+
+// ─── POST profile (User Info & Password) ──────────────────────
+if ($method === 'POST' && $action === 'profile') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $name    = trim($data['name']    ?? '');
+    $email   = trim($data['email']   ?? '');
+    $phone   = trim($data['phone']   ?? '') ?: null;
+    $address = trim($data['address'] ?? '') ?: null;
+    $newPass = trim($data['new_password'] ?? '');
+    $curPass = trim($data['current_password'] ?? '');
+
+    if (!$name || !$email) jsonErr('Name and email required');
+
+    // Check email uniqueness
+    $check = $db->prepare("SELECT id FROM admins WHERE email=? AND id!=?");
+    $check->bind_param('si', $email, $uid);
+    $check->execute();
+    if ($check->get_result()->num_rows > 0) jsonErr('Email already in use');
+
+    if ($newPass) {
+        // Verify current password first before allowing a change
+        $cur = $db->query("SELECT password FROM admins WHERE id=$uid")->fetch_assoc();
+        if (!password_verify($curPass, $cur['password'])) jsonErr('Current password is incorrect');
+        if (strlen($newPass) < 6) jsonErr('New password must be at least 6 characters');
+        
+        $hash = password_hash($newPass, PASSWORD_BCRYPT);
+        $stmt = $db->prepare("UPDATE admins SET name=?, email=?, phone=?, address=?, password=? WHERE id=?");
+        $stmt->bind_param('sssssi', $name, $email, $phone, $address, $hash, $uid);
+    } else {
+        // Update profile without changing password
+        $stmt = $db->prepare("UPDATE admins SET name=?, email=?, phone=?, address=? WHERE id=?");
+        $stmt->bind_param('ssssi', $name, $email, $phone, $address, $uid);
+    }
+    
+    $stmt->execute();
+    
+    // Update the session name
+    $_SESSION['user_name'] = $name;
+
+    jsonOk(['message' => 'Profile updated']);
+}
+
+
+================================================
+FILE: EntryFlow/api/transactions.php
+================================================
+<?php
+require_once '../config.php';
+requireLogin();
+
+$db  = getDB();
+$uid = (int)$_SESSION['user_id'];
+$method = $_SERVER['REQUEST_METHOD'];
+
+// ─── GET — list / search ─────────────────────────────────────
+if ($method === 'GET') {
+    $where = ["t.user_id = $uid"];
+    $params = [];
+    $types  = '';
+
+    if (!empty($_GET['type'])) {
+        $where[] = "t.type = ?"; $params[] = $_GET['type']; $types .= 's';
+    }
+    if (!empty($_GET['status'])) {
+        $where[] = "t.status = ?"; $params[] = $_GET['status']; $types .= 's';
+    }
+    if (!empty($_GET['category_id'])) {
+        $where[] = "t.category_id = ?"; $params[] = (int)$_GET['category_id']; $types .= 'i';
+    }
+    if (!empty($_GET['month'])) {     // format YYYY-MM
+        $where[] = "DATE_FORMAT(t.transaction_date, '%Y-%m') = ?";
+        $params[] = $_GET['month']; $types .= 's';
+    }
+    if (!empty($_GET['search'])) {
+        $where[] = "t.description LIKE ?";
+        $params[] = '%' . $_GET['search'] . '%'; $types .= 's';
+    }
+
+    $sql = "SELECT t.id, t.invoice_no, t.description, t.amount, t.type, t.status,
+                   t.transaction_date, t.notes, t.created_at,
+                   c.name AS client_name, cat.name AS category_name
+            FROM transactions t
+            LEFT JOIN clients c ON c.id = t.client_id
+            LEFT JOIN categories cat ON cat.id = t.category_id
+            WHERE " . implode(' AND ', $where) . "
+            ORDER BY t.transaction_date DESC, t.id DESC
+            LIMIT 200";
+
+    $stmt = $db->prepare($sql);
+    if ($types) $stmt->bind_param($types, ...$params);
+    $stmt->execute();
+    $rows = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+    jsonOk($rows);
+}
+
+// ─── POST — create ───────────────────────────────────────────
+if ($method === 'POST') {
+    $data = json_decode(file_get_contents('php://input'), true) ?? $_POST;
+
+    $desc   = trim($data['description'] ?? '');
+    $amount = (float)($data['amount'] ?? 0);
+    $type   = $data['type'] ?? '';
+    $status = $data['status'] ?? 'pending';
+    $date   = $data['transaction_date'] ?? date('Y-m-d');
+    $invNo  = trim($data['invoice_no'] ?? '') ?: null;
+    $catId  = !empty($data['category_id']) ? (int)$data['category_id'] : null;
+    $cliId  = !empty($data['client_id'])   ? (int)$data['client_id']   : null;
+    $notes  = trim($data['notes'] ?? '') ?: null;
+
+    if (!$desc || $amount <= 0 || !in_array($type, ['income','expense']) || !$date) {
+        jsonErr('Missing required fields');
+    }
+
+    $stmt = $db->prepare(
+        "INSERT INTO transactions (user_id, client_id, category_id, invoice_no, description, amount, type, status, transaction_date, notes)
+         VALUES (?,?,?,?,?,?,?,?,?,?)"
+    );
+    $stmt->bind_param('iiissdssss', $uid, $cliId, $catId, $invNo, $desc, $amount, $type, $status, $date, $notes);
+    if ($stmt->execute()) {
+        jsonOk(['id' => $db->insert_id, 'message' => 'Transaction added']);
+    }
+    jsonErr('Failed to save: ' . $db->error);
+}
+
+// ─── PUT — update ────────────────────────────────────────────
+if ($method === 'PUT') {
+    $data = json_decode(file_get_contents('php://input'), true);
+    $id   = (int)($data['id'] ?? 0);
+    if (!$id) jsonErr('Missing id');
+
+    $desc   = trim($data['description'] ?? '');
+    $amount = (float)($data['amount'] ?? 0);
+    $type   = $data['type'] ?? '';
+    $status = $data['status'] ?? 'pending';
+    $date   = $data['transaction_date'] ?? date('Y-m-d');
+    $invNo  = trim($data['invoice_no'] ?? '') ?: null;
+    $catId  = !empty($data['category_id']) ? (int)$data['category_id'] : null;
+    $cliId  = !empty($data['client_id'])   ? (int)$data['client_id']   : null;
+    $notes  = trim($data['notes'] ?? '') ?: null;
+
+    $stmt = $db->prepare(
+        "UPDATE transactions SET client_id=?, category_id=?, invoice_no=?, description=?,
+         amount=?, type=?, status=?, transaction_date=?, notes=?
+         WHERE id=? AND user_id=?"
+    );
+    $stmt->bind_param('iissdssssii', $cliId, $catId, $invNo, $desc, $amount, $type, $status, $date, $notes, $id, $uid);
+    $stmt->execute();
+    jsonOk(['message' => 'Updated']);
+}
+
+// ─── DELETE ──────────────────────────────────────────────────
+if ($method === 'DELETE') {
+    // Read the ID straight from the URL
+    $id = (int)($_GET['id'] ?? 0);
+
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Missing ID in request.']);
+        exit;
+    }
+
+    // Direct database query bypassing any prepared statement quirks
+    $sql = "DELETE FROM transactions WHERE id = $id AND user_id = $uid";
+    
+    if ($db->query($sql)) {
+        echo json_encode(['success' => true, 'message' => 'Deleted successfully']);
+        exit;
+    } else {
+        echo json_encode(['success' => false, 'error' => 'Database Error: ' . $db->error]);
+        exit;
+    }
+}
+
+
+================================================
+FILE: EntryFlow/assets/css/style.css
+================================================
+/* * EntryFlow Base Stylesheet */
+:root {
+    /* Modern Growth Dark Palette */
+    --primary: #10B981; /* Emerald Green */
+    --primary-dark: #059669; 
+    --primary-light: #34D399; 
+    --accent: #38BDF8; /* Sky blue for subtle contrast */
+    
+    --bg-main: #0F172A; /* Deep slate blue/gray instead of harsh black */
+    --surface-1: #1E293B; /* Softer dark surface */
+    --surface-2: #334155; 
+    --border-color: #475569;
+    
+    --text-main: #F8FAFC; 
+    --text-muted: #94A3B8;
+    
+    --success: #10B981; 
+    --danger: #EF4444;
+    --sidebar-width: 220px;
+}
+
+/* If you use this light mode, update your table hover effect slightly for better visibility! */
+tr:hover { background: rgba(0, 0, 0, 0.03); }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg-main); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+/* Layout & Sidebar */
+.sidebar { width: var(--sidebar-width); background: var(--surface-1); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; flex-shrink: 0; padding-bottom: 24px; }
+.logo-wrap { padding: 24px 20px; border-bottom: 1px solid var(--border-color); }
+.logo { font-family: 'DM Serif Display', serif; font-size: 22px; display: flex; align-items: center; gap: 8px; }
+.logo-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary-light); }
+.biz-name { font-size: 11px; color: var(--text-muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Navigation */
+nav { flex: 1; padding: 4px 10px; }
+.nav-label { font-size: 10px; font-weight: 600; letter-spacing: 1.1px; color: var(--text-muted); text-transform: uppercase; padding: 12px 8px 5px; }
+.nav-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; transition: all 0.15s; margin-bottom: 1px; border: 1px solid transparent; text-decoration: none; }
+.nav-item:hover { background: var(--surface-2); color: var(--text-main); }
+.nav-item.active { background: var(--primary-dark); color: var(--text-main); border-color: var(--primary); }
+
+/* Main Content Area */
+.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+.topbar { height: 58px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 24px; gap: 12px; background: var(--surface-1); flex-shrink: 0; }
+.page-title { font-family: 'DM Serif Display', serif; font-size: 17px; flex: 1; }
+.content { flex: 1; overflow-y: auto; padding: 24px; }
+
+/* Cards & KPIs */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+.kpi-card { background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; position: relative; overflow: hidden; }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: var(--primary); }
+.kl { font-size: 12px; color: var(--text-muted); margin-bottom: 5px; }
+.kv { font-size: 20px; font-weight: 600; }
+
+/* Tables */
+.tc { background: var(--surface-1); border: 1px solid var(--border-color); border-radius: 12px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+th { background: var(--surface-2); padding: 12px 16px; color: var(--text-muted); font-weight: 500; border-bottom: 1px solid var(--border-color); }
+td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover { background: rgba(255,255,255,0.02); }
+.tds { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+/* Buttons */
+.btn { padding: 7px 14px; border-radius: 8px; border: none; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; cursor: pointer; transition: all 0.15s; display: inline-flex; align-items: center; gap: 5px; }
+.btn-primary { background: var(--primary); color: #fff; }
+.btn-primary:hover { background: var(--primary-light); }
+.btn-danger { background: var(--surface-2); color: var(--danger); border: 1px solid var(--border-color); }
+.btn-danger:hover { background: var(--danger); color: #fff; border-color: var(--danger); }
+
+/* Restored Utilities & Badges */
+.gn { border-left-color: var(--success) !important; }
+.ac { border-left-color: var(--danger) !important; }
+.ap { color: var(--success); font-weight: 500; }
+.an { color: var(--danger); font-weight: 500; }
+
+.badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
+.bp2 { background: rgba(61, 170, 114, 0.15); color: var(--success); } /* Paid */
+.bpd { background: rgba(224, 112, 48, 0.15); color: var(--accent); } /* Pending */
+.bod { background: rgba(224, 80, 80, 0.15); color: var(--danger); } /* Overdue */
+
+/* Form Inputs */
+.sb { background: var(--surface-2); border: 1px solid var(--border-color); color: var(--text-main); padding: 8px 12px; border-radius: 6px; font-family: inherit; font-size: 13px; outline: none; transition: 0.2s; }
+.sb:focus { border-color: var(--primary); }
+
+/* Modals */
+.modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.6); align-items: center; justify-content: center; }
+.modal.active { display: flex; }
+.modal-content { background: var(--surface-1); padding: 24px; border-radius: 12px; width: 100%; max-width: 400px; border: 1px solid var(--border-color); box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+.modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.modal-title { font-size: 18px; font-family: 'DM Serif Display', serif; color: var(--primary-light); }
+.close-btn { background: none; border: none; color: var(--text-muted); font-size: 24px; cursor: pointer; }
+.close-btn:hover { color: var(--text-main); }
+.form-group { margin-bottom: 15px; }
+.form-group label { display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted); }
+.form-group input, .form-group select, .form-group textarea { width: 100%; }
+
+/* Avatars & Table Polish */
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: bold; color: #fff; margin-right: 12px; font-size: 14px; flex-shrink: 0; }
+.client-name-wrap { display: flex; align-items: center; }
+.av-1 { background-color: #3b82f6; } /* Blue */
+.av-2 { background-color: #10b981; } /* Green */
+.av-3 { background-color: #f59e0b; } /* Orange */
+.av-4 { background-color: #ef4444; } /* Red */
+.av-5 { background-color: #8b5cf6; } /* Purple */
+
+/* ─── Dashboard Summary Grid Layout ─── */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+
+/* ─── 3-Column Grid for Reports Page ─── */
+.grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 24px;
+}
+
+@media (max-width: 1024px) { .grid-3 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 600px) { .grid-3 { grid-template-columns: 1fr; } }
+
+/* ─── Dashboard Summary Card Accents (Left-Side, Rounded & Spaced) ─── */
+/* Base styles to fix sharp edges and add proper inner spacing */
+.card-income, .card-expense, .card-profit, .card-pending {
+    background-color: var(--surface-1) !important;
+    border-radius: 12px !important; 
+    border-top: none !important;
+    border-right: none !important;
+    border-bottom: none !important;
+    /* Top: 20px, Right: 20px, Bottom: 20px, Left: 24px */
+    padding: 20px 20px 20px 24px !important; 
+}
+
+/* Polishing the text labels so they sit nicely above the numbers */
+.card-income h3, .card-expense h3, .card-profit h3, .card-pending h3 {
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+/* 1. Gross Income (Blue) */
+.card-income { border-left: 5px solid #3B82F6 !important; }
+.card-income h2 { color: #3B82F6; }
+
+/* 2. Total Expenses (Red) */
+.card-expense { border-left: 5px solid var(--danger) !important; }
+.card-expense h2 { color: var(--danger); }
+
+/* 3. Net Profit (Emerald Green) */
+.card-profit { border-left: 5px solid var(--primary) !important; }
+.card-profit h2 { color: var(--primary); }
+
+/* 4. Pending Transactions (Orange) */
+.card-pending { border-left: 5px solid #F59E0B !important; }
+.card-pending h2 { color: #F59E0B; }
+
+
+
+
+================================================
+FILE: EntryFlow/assets/js/app.js
+================================================
+/**
+ * EntryFlow - Main Application Scripts
+ */
+
+// --- Modal Controls & Reset ---
+function resetForm(formId) {
+    document.getElementById(formId).reset();
+    if(document.getElementById('txId')) document.getElementById('txId').value = '';
+    if(document.getElementById('clId')) document.getElementById('clId').value = '';
+}
+
+function openModal(modalId) {
+    if(modalId === 'transactionModal') {
+        resetForm('txForm'); 
+        document.querySelector('#transactionModal .modal-title').innerText = 'Add Transaction';
+    }
+    if(modalId === 'clientModal') {
+        resetForm('clientForm'); 
+        document.querySelector('#clientModal .modal-title').innerText = 'Add Client';
+    }
+    document.getElementById(modalId).classList.add('active');
+}
+
+function closeModal(modalId) {
+    document.getElementById(modalId).classList.remove('active');
+}
+
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        event.target.classList.remove('active');
+    }
+}
+
+// --- Delete Logic ---
+async function confirmDelete(type, id) {
+    if (confirm(`Are you sure you want to delete this ${type}? This action cannot be undone.`)) {
+        // Pass the ID directly in the URL query string
+        const endpoint = type === 'transaction' ? `api/transactions.php?id=${id}` : `api/clients.php?id=${id}`;
+        
+        try {
+            const response = await fetch(endpoint, { method: 'DELETE' });
+            const result = await response.json();
+            
+            if (result.success || result.message) {
+                window.location.reload(); 
+            } else {
+                alert("Error: " + (result.error || `Failed to delete ${type}`));
+            }
+        } catch (err) {
+            alert("Error: Could not connect to the server.");
+        }
+    }
+}
+
+// --- Edit Populators ---
+function editClient(btn) {
+    const ds = btn.dataset;
+    document.getElementById('clId').value = ds.id;
+    document.getElementById('clName').value = ds.name;
+    document.getElementById('clEmail').value = ds.email;
+    document.getElementById('clPhone').value = ds.phone;
+    document.getElementById('clAddress').value = ds.address;
+    document.getElementById('clNotes').value = ds.notes;
+    
+    document.querySelector('#clientModal .modal-title').innerText = 'Edit Client';
+    document.getElementById('clientModal').classList.add('active');
+}
+
+function editTransaction(btn) {
+    const ds = btn.dataset;
+    document.getElementById('txId').value = ds.id;
+    document.getElementById('txDesc').value = ds.desc;
+    document.getElementById('txInv').value = ds.inv || '';
+    document.getElementById('txAmount').value = ds.amount;
+    document.getElementById('txType').value = ds.type;
+    document.getElementById('txCat').value = ds.cat || '';
+    document.getElementById('txClient').value = ds.client || '';
+    document.getElementById('txDate').value = ds.date;
+    document.getElementById('txStatus').value = ds.status;
+    document.getElementById('txNotes').value = ds.notes || '';
+
+    document.querySelector('#transactionModal .modal-title').innerText = 'Edit Transaction';
+    document.getElementById('transactionModal').classList.add('active');
+}
+
+// --- API Helper (Now supports POST and PUT) ---
+async function apiCall(endpoint, data, method = 'POST') {
+    try {
+        const response = await fetch(endpoint, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    } catch (error) {
+        console.error("API Error:", error);
+        return { success: false, error: "Network error" };
+    }
+}
+
+// --- Handle Form Submissions ---
+document.addEventListener('DOMContentLoaded', () => {
+
+    const txForm = document.getElementById('txForm');
+    if (txForm) {
+        txForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const idVal = document.getElementById('txId').value;
+            const method = idVal ? 'PUT' : 'POST'; // If ID exists, it's an Update (PUT)
+            
+            const payload = {
+                description: document.getElementById('txDesc').value,
+                invoice_no: document.getElementById('txInv').value,
+                amount: document.getElementById('txAmount').value,
+                type: document.getElementById('txType').value,
+                category_id: document.getElementById('txCat').value,
+                client_id: document.getElementById('txClient').value,
+                transaction_date: document.getElementById('txDate').value,
+                status: document.getElementById('txStatus').value,
+                notes: document.getElementById('txNotes').value
+            };
+            if(idVal) payload.id = idVal;
+
+            const result = await apiCall('api/transactions.php', payload, method);
+            if (result.success || result.message) {
+                window.location.reload(); 
+            } else {
+                alert("Error: " + (result.error || "Failed to save transaction"));
+            }
+        });
+    }
+
+    const clientForm = document.getElementById('clientForm');
+    if (clientForm) {
+        clientForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const idVal = document.getElementById('clId').value;
+            const method = idVal ? 'PUT' : 'POST';
+            
+            const payload = {
+                name: document.getElementById('clName').value,
+                email: document.getElementById('clEmail').value,
+                phone: document.getElementById('clPhone').value,
+                address: document.getElementById('clAddress').value,
+                notes: document.getElementById('clNotes').value
+            };
+            if(idVal) payload.id = idVal;
+
+            const result = await apiCall('api/clients.php', payload, method);
+            if (result.success || result.message) {
+                window.location.reload(); 
+            } else {
+                alert("Error: " + (result.error || "Failed to save client"));
+            }
+        });
+    }
+});
+
+
+================================================
+FILE: EntryFlow/includes/footer.php
+================================================
+<?php
+// includes/footer.php
+$modalDb = getDB();
+$modalUid = (int)($_SESSION['user_id'] ?? 0);
+$clientsList = $modalDb->query("SELECT id, name FROM clients WHERE user_id=$modalUid ORDER BY name")->fetch_all(MYSQLI_ASSOC);
+$categoriesList = $modalDb->query("SELECT id, name, type FROM categories ORDER BY name")->fetch_all(MYSQLI_ASSOC);
+?>
+        </div> </main> <div id="transactionModal" class="modal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <div class="modal-title">Add Transaction</div>
+                <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
+            </div>
+            <form id="txForm">
+                <input type="hidden" id="txId" value="">
+                
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 2;">
+                        <label>Description *</label>
+                        <input type="text" id="txDesc" class="sb" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Invoice No.</label>
+                        <input type="text" id="txInv" class="sb" placeholder="Optional">
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Amount (₱) *</label>
+                        <input type="number" id="txAmount" class="sb" step="0.01" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Type *</label>
+                        <select id="txType" class="sb" required>
+                            <option value="income">Income</option>
+                            <option value="expense">Expense</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Category</label>
+                        <select id="txCat" class="sb">
+                            <option value="">-- None --</option>
+                            <?php foreach($categoriesList as $cat): ?>
+                                <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?> (<?= ucfirst($cat['type']) ?>)</option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Client</label>
+                        <select id="txClient" class="sb">
+                            <option value="">-- None --</option>
+                            <?php foreach($clientsList as $cli): ?>
+                                <option value="<?= $cli['id'] ?>"><?= htmlspecialchars($cli['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Date *</label>
+                        <input type="date" id="txDate" class="sb" value="<?= date('Y-m-d') ?>" required>
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Status *</label>
+                        <select id="txStatus" class="sb" required>
+                            <option value="paid">Paid</option>
+                            <option value="pending">Pending</option>
+                            <option value="overdue">Overdue</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Notes</label>
+                    <textarea id="txNotes" class="sb" rows="2" style="width: 100%; resize: vertical;"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Transaction</button>
+            </form>
+        </div>
+    </div>
+
+    <div id="clientModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Add Client</div>
+                <button class="close-btn" onclick="closeModal('clientModal')">&times;</button>
+            </div>
+            <form id="clientForm">
+                <input type="hidden" id="clId" value="">
+                <div class="form-group">
+                    <label>Client Name *</label>
+                    <input type="text" id="clName" class="sb" required>
+                </div>
+                <div class="form-group" style="display: flex; gap: 10px;">
+                    <div style="flex: 1;">
+                        <label>Email Address</label>
+                        <input type="email" id="clEmail" class="sb">
+                    </div>
+                    <div style="flex: 1;">
+                        <label>Phone Number</label>
+                        <input type="text" id="clPhone" class="sb">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Physical Address</label>
+                    <input type="text" id="clAddress" class="sb">
+                </div>
+                <div class="form-group">
+                    <label>Notes / Details</label>
+                    <textarea id="clNotes" class="sb" rows="2" style="width: 100%; resize: vertical;"></textarea>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Client</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="assets/js/app.js"></script>
+</body>
+</html>
+
+
+================================================
+FILE: EntryFlow/includes/header.php
+================================================
+<?php
+// includes/header.php
+// This handles the head, opening tags, and sidebar for all pages.
+?>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EntryFlow — <?= htmlspecialchars($user['business_name'] ?? 'Dashboard') ?></title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
+</head>
+<body>
+    
+    <aside class="sidebar">
+        <div class="logo-wrap">
+            <div class="logo"><div class="logo-dot"></div> EntryFlow</div>
+            <div class="biz-name"><?= htmlspecialchars($user['business_name'] ?? 'My Business') ?></div>
+        </div>
+
+        <nav>
+            <div class="nav-label">Menu</div>
+            <a href="index.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'index.php' ? 'active' : '' ?>">
+                <span class="ni-ic">📊</span> Dashboard
+            </a>
+            <a href="transactions.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'transactions.php' ? 'active' : '' ?>">
+                <span class="ni-ic">💸</span> Transactions
+            </a>
+            <a href="clients.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'clients.php' ? 'active' : '' ?>">
+                <span class="ni-ic">👥</span> Clients
+            </a>
+            <a href="reports.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'reports.php' ? 'active' : '' ?>">
+                <span class="ni-ic">📈</span> Reports
+            </a>
+            
+            <div class="nav-label" style="margin-top: 15px;">System</div>
+            <a href="settings.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'settings.php' ? 'active' : '' ?>">
+                <span class="ni-ic">⚙️</span> Settings
+            </a>
+            <a href="logout.php" class="nav-item">
+                <span class="ni-ic">🚪</span> Logout
+            </a>
+        </nav>
+    </aside>
+
+    <main class="main">
+        <header class="topbar">
+            <h1 class="page-title">
+                <?php 
+                    // Dynamically set title based on page
+                    $pageName = basename($_SERVER['PHP_SELF'], ".php");
+                    echo ucfirst($pageName); 
+                ?>
+            </h1>
+        </header>
+        
+        <div class="content">
+
+
+================================================
+FILE: .github/workflows/static.yml
+================================================
+# Simple workflow for deploying static content to GitHub Pages
+name: Deploy static content to Pages
+
+on:
+  # Runs on pushes targeting the default branch
+  push:
+    branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment, skipping runs queued between the run in-progress and latest queued.
+# However, do NOT cancel in-progress runs as we want to allow these production deployments to complete.
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Single deploy job since we're just deploying
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # Upload entire repository
+          path: '.'
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
+
+
