@@ -68,8 +68,11 @@ include 'includes/header.php';
                 <div style="flex: 1;">
                     <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Default Currency</label>
                     <select id="b_currency" class="sb" style="width: 100%;">
-                        <option value="PHP" <?= ($user['currency'] === 'PHP') ? 'selected' : '' ?>>PHP - Philippine Peso</option>
-                        <option value="USD" <?= ($user['currency'] === 'USD') ? 'selected' : '' ?>>USD - US Dollar</option>
+                        <option value="PHP" <?= ($user['currency'] === 'PHP') ? 'selected' : '' ?>>PHP - Philippine Peso (₱)</option>
+                        <option value="USD" <?= ($user['currency'] === 'USD') ? 'selected' : '' ?>>USD - US Dollar ($)</option>
+                        <option value="EUR" <?= ($user['currency'] === 'EUR') ? 'selected' : '' ?>>EUR - Euro (€)</option>
+                        <option value="GBP" <?= ($user['currency'] === 'GBP') ? 'selected' : '' ?>>GBP - British Pound (£)</option>
+                        <option value="JPY" <?= ($user['currency'] === 'JPY') ? 'selected' : '' ?>>JPY - Japanese Yen (¥)</option>
                     </select>
                 </div>
             </div>

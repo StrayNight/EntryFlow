@@ -1,13 +1,29 @@
 <?php
 // includes/header.php
-// This handles the head, opening tags, and sidebar for all pages.
+$headerDb = getDB();
+$headerUid = (int)($_SESSION['user_id'] ?? 0);
+
+// Fetch the business name and currency setting
+$adminInfo = $headerDb->query("SELECT business_name, currency FROM admins WHERE id = $headerUid")->fetch_assoc();
+$bizName = $adminInfo['business_name'] ?? 'My Business';
+$currCode = $adminInfo['currency'] ?? 'PHP';
+
+// Map Currency Codes to Symbols globally!
+$symbols = [
+    'PHP' => '₱',
+    'USD' => '$',
+    'EUR' => '€',
+    'GBP' => '£',
+    'JPY' => '¥'
+];
+$sym = $symbols[$currCode] ?? '₱';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EntryFlow — <?= htmlspecialchars($user['business_name'] ?? 'Dashboard') ?></title>
+    <title>EntryFlow — <?= htmlspecialchars($bizName) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
 </head>
@@ -16,7 +32,7 @@
     <aside class="sidebar">
         <div class="logo-wrap">
             <div class="logo"><div class="logo-dot"></div> EntryFlow</div>
-            <div class="biz-name"><?= htmlspecialchars($user['business_name'] ?? 'My Business') ?></div>
+            <div class="biz-name"><?= htmlspecialchars($bizName) ?></div>
         </div>
 
         <nav>
@@ -48,9 +64,8 @@
         <header class="topbar">
             <h1 class="page-title">
                 <?php 
-                    // Dynamically set title based on page
                     $pageName = basename($_SERVER['PHP_SELF'], ".php");
-                    echo ucfirst($pageName); 
+                    echo ucfirst($pageName === 'index' ? 'dashboard' : $pageName);
                 ?>
             </h1>
         </header>

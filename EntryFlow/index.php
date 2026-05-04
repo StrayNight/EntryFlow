@@ -34,22 +34,23 @@ include 'includes/header.php';
 ?>
 
 <div class="grid">
-    <div class="card card-income">
+    <div class="card-income">
         <h3>Gross Income</h3>
-        <h2>₱<?= number_format($totals['income'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['income'], 2) ?></h2>
     </div>
-    
-    <div class="card card-expense">
+    <div class="card-expense">
         <h3>Total Expenses</h3>
-        <h2>₱<?= number_format($totals['expense'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['expense'], 2) ?></h2>
     </div>
     
-    <div class="card card-profit">
+    <div class="card-profit" <?= $grossProfit < 0 ? 'style="border-left-color: var(--danger) !important;"' : '' ?>>
         <h3>Net Profit</h3>
-        <h2>₱<?= number_format($grossProfit, 2) ?></h2>
+        <h2 <?= $grossProfit < 0 ? 'style="color: var(--danger) !important;"' : '' ?>>
+            <?= $grossProfit < 0 ? '-' : '' ?><?= $sym ?><?= number_format(abs($grossProfit), 2) ?>
+        </h2>
     </div>
     
-    <div class="card card-pending">
+    <div class="card-pending">
         <h3>Pending Transactions</h3>
         <h2><?= $pendingCnt ?></h2>
     </div>
@@ -57,7 +58,6 @@ include 'includes/header.php';
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px;">
     <h3>Recent Transactions</h3>
-    <button class="btn btn-primary" onclick="openModal('transactionModal')">+ Add New</button>
 </div>
 
 <div class="tc">
