@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 04, 2026 at 11:34 AM
+-- Generation Time: May 04, 2026 at 03:00 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -49,7 +49,7 @@ CREATE TABLE `admins` (
 --
 
 INSERT INTO `admins` (`id`, `name`, `email`, `password`, `role`, `business_name`, `business_type`, `phone`, `address`, `currency`, `avatar_color`, `is_active`, `created_at`, `updated_at`) VALUES
-(6, 'Rick Warren Nicasio', '2401107842@student.buksu.edu.ph', '$2y$10$Xz4xvkTOFYoS5m0vLRaK4O1GaCaRA.8EF9jk/ogqPjinmcyyBk6IK', 'owner', 'Monkey Business', NULL, NULL, NULL, 'PHP', '#9B1D1D', 1, '2026-04-30 11:45:48', '2026-04-30 11:50:01');
+(6, 'Rick Warren Nicasio', '2401107842@student.buksu.edu.ph', '$2y$10$Xz4xvkTOFYoS5m0vLRaK4O1GaCaRA.8EF9jk/ogqPjinmcyyBk6IK', 'owner', 'Monkey Business', 'Goofing Around', '09622431801', 'Malaybalay City', 'PHP', '#9B1D1D', 1, '2026-04-30 11:45:48', '2026-05-04 19:00:11');
 
 -- --------------------------------------------------------
 
@@ -100,6 +100,16 @@ CREATE TABLE `clients` (
   `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Dumping data for table `clients`
+--
+
+INSERT INTO `clients` (`id`, `user_id`, `name`, `email`, `phone`, `address`, `notes`, `created_at`) VALUES
+(11, 6, 'Emmge Ramos', 'Emmge@email.com', '0969 696 6969', 'Malaybalay City', 'Fatass man', '2026-05-04 18:00:00'),
+(12, 6, 'Jay Kyle Tanedo', 'Jay@email.com', '0967 694 2021', 'Manila City', 'Goofy ass man', '2026-05-04 18:00:21'),
+(13, 6, 'Khem Shwartz Cabutad', 'ShwartzIzBlack@yahoo.com', '0991 191 6969', 'Tomato Town', 'Black ass man', '2026-05-04 18:00:47'),
+(14, 6, 'Tax Man', 'EyeHeartMoney@email.com', '0987 654 3210', 'Epstein Island', NULL, '2026-05-04 18:07:39');
+
 -- --------------------------------------------------------
 
 --
@@ -121,61 +131,6 @@ CREATE TABLE `import_logs` (
 -- --------------------------------------------------------
 
 --
--- Table structure for table `settings`
---
-
-CREATE TABLE `settings` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `business_name` varchar(200) DEFAULT NULL,
-  `business_type` varchar(100) DEFAULT NULL,
-  `currency` varchar(5) NOT NULL DEFAULT 'PHP',
-  `fiscal_year_start` varchar(20) NOT NULL DEFAULT 'January',
-  `tax_rate` decimal(5,2) NOT NULL DEFAULT 12.00,
-  `email_notifications` tinyint(1) NOT NULL DEFAULT 1,
-  `sms_notifications` tinyint(1) NOT NULL DEFAULT 0,
-  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `settings`
---
-
-INSERT INTO `settings` (`id`, `user_id`, `business_name`, `business_type`, `currency`, `fiscal_year_start`, `tax_rate`, `email_notifications`, `sms_notifications`, `updated_at`) VALUES
-(6, 6, NULL, NULL, 'PHP', 'January', 12.00, 1, 0, '2026-04-30 11:45:48');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `templates`
---
-
-CREATE TABLE `templates` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `name` varchar(150) NOT NULL,
-  `description` text DEFAULT NULL,
-  `icon` varchar(10) NOT NULL DEFAULT '?',
-  `usage_count` int(11) NOT NULL DEFAULT 0,
-  `is_featured` tinyint(1) NOT NULL DEFAULT 0,
-  `sort_order` int(11) NOT NULL DEFAULT 0,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
---
--- Dumping data for table `templates`
---
-
-INSERT INTO `templates` (`id`, `name`, `description`, `icon`, `usage_count`, `is_featured`, `sort_order`, `created_at`) VALUES
-(1, 'Daily Cash Flow', 'Track daily income and expenses. Great for sari-sari stores and market vendors.', '📒', 1240, 1, 1, '2026-04-29 14:52:02'),
-(2, 'Accounts Payable', 'Monitor what you owe suppliers. Never miss a payment deadline again.', '🧾', 870, 0, 2, '2026-04-29 14:52:02'),
-(3, 'Accounts Receivable', 'Track what clients owe you. Send reminders and monitor overdue invoices.', '📬', 930, 0, 3, '2026-04-29 14:52:02'),
-(4, 'Inventory Log', 'Record stock levels, restock dates, and item costs in one organized view.', '📦', 640, 0, 4, '2026-04-29 14:52:02'),
-(5, 'Monthly P&L', 'Auto-summarizes income vs expenses. Share with your accountant or bank.', '📊', 510, 0, 5, '2026-04-29 14:52:02'),
-(6, 'Payroll Register', 'Manage employee salaries, deductions, and net pay per pay period.', '🏦', 390, 0, 6, '2026-04-29 14:52:02');
-
--- --------------------------------------------------------
-
---
 -- Table structure for table `transactions`
 --
 
@@ -193,6 +148,37 @@ CREATE TABLE `transactions` (
   `notes` text DEFAULT NULL,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `transactions`
+--
+
+INSERT INTO `transactions` (`id`, `user_id`, `client_id`, `category_id`, `invoice_no`, `description`, `amount`, `type`, `status`, `transaction_date`, `notes`, `created_at`, `updated_at`) VALUES
+(9, 6, 13, 1, '1234', 'Extra large Illocos impanada', 599.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:02:04', '2026-05-04 18:02:04'),
+(10, 6, 11, 1, '666', 'Dubai Chewy Choco', 199.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:02:58', '2026-05-04 18:02:58'),
+(11, 6, 12, 1, '420', 'San Marino Corned Beef', 99.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:05:53', '2026-05-04 18:05:53'),
+(13, 6, 14, 1, '420', 'Monthly Rent', 5000.00, 'expense', 'overdue', '2026-05-04', NULL, '2026-05-04 18:20:36', '2026-05-04 18:20:36'),
+(14, 6, 12, 1, '1893', '(Bulk) Dubai Chewy Choco', 2500.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:21:40', '2026-05-04 18:21:40'),
+(15, 6, 11, 1, '3242', 'Extra large Illocos impanada', 599.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:22:11', '2026-05-04 18:22:11'),
+(16, 6, 14, 10, NULL, 'Monthly Rent', 5000.00, 'expense', 'paid', '2026-05-04', NULL, '2026-05-04 18:41:21', '2026-05-04 18:41:21');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `transaction_templates`
+--
+
+CREATE TABLE `transaction_templates` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `user_id` int(10) UNSIGNED NOT NULL,
+  `template_name` varchar(150) NOT NULL,
+  `type` enum('income','expense') NOT NULL,
+  `description` varchar(255) DEFAULT NULL,
+  `amount` decimal(14,2) DEFAULT NULL,
+  `category_id` int(10) UNSIGNED DEFAULT NULL,
+  `client_id` int(10) UNSIGNED DEFAULT NULL,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
@@ -228,19 +214,6 @@ ALTER TABLE `import_logs`
   ADD KEY `fk_log_user` (`user_id`);
 
 --
--- Indexes for table `settings`
---
-ALTER TABLE `settings`
-  ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `user_id` (`user_id`);
-
---
--- Indexes for table `templates`
---
-ALTER TABLE `templates`
-  ADD PRIMARY KEY (`id`);
-
---
 -- Indexes for table `transactions`
 --
 ALTER TABLE `transactions`
@@ -250,6 +223,15 @@ ALTER TABLE `transactions`
   ADD KEY `idx_user_date` (`user_id`,`transaction_date`),
   ADD KEY `idx_type` (`type`),
   ADD KEY `idx_status` (`status`);
+
+--
+-- Indexes for table `transaction_templates`
+--
+ALTER TABLE `transaction_templates`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `fk_template_user` (`user_id`),
+  ADD KEY `fk_template_category` (`category_id`),
+  ADD KEY `fk_template_client` (`client_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -271,7 +253,7 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `import_logs`
@@ -280,22 +262,16 @@ ALTER TABLE `import_logs`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
--- AUTO_INCREMENT for table `settings`
---
-ALTER TABLE `settings`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
--- AUTO_INCREMENT for table `templates`
---
-ALTER TABLE `templates`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
-
---
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
+
+--
+-- AUTO_INCREMENT for table `transaction_templates`
+--
+ALTER TABLE `transaction_templates`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
@@ -320,18 +296,20 @@ ALTER TABLE `import_logs`
   ADD CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `settings`
---
-ALTER TABLE `settings`
-  ADD CONSTRAINT `fk_settings_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
-
---
 -- Constraints for table `transactions`
 --
 ALTER TABLE `transactions`
   ADD CONSTRAINT `fk_tx_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_tx_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_tx_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `transaction_templates`
+--
+ALTER TABLE `transaction_templates`
+  ADD CONSTRAINT `fk_template_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_template_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_template_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
