@@ -1,3 +1,37 @@
+Directory structure:
+└── straynight-entryflow/
+    ├── README.md
+    ├── index.html
+    ├── LICENSE
+    ├── EntryFlow/
+    │   ├── clients.php
+    │   ├── config.php
+    │   ├── entryflow_db.sql
+    │   ├── index.php
+    │   ├── login.php
+    │   ├── logout.php
+    │   ├── reports.php
+    │   ├── settings.php
+    │   ├── setup.php
+    │   ├── transactions.php
+    │   ├── api/
+    │   │   ├── clients.php
+    │   │   ├── import.php
+    │   │   ├── reports.php
+    │   │   ├── settings.php
+    │   │   └── transactions.php
+    │   ├── assets/
+    │   │   ├── css/
+    │   │   │   └── style.css
+    │   │   └── js/
+    │   │       └── app.js
+    │   └── includes/
+    │       ├── footer.php
+    │       └── header.php
+    └── .github/
+        └── workflows/
+            └── static.yml
+
 ================================================
 FILE: README.md
 ================================================
