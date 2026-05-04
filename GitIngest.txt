@@ -542,22 +542,23 @@ include 'includes/header.php';
 ?>
 
 <div class="grid">
-    <div class="card card-income">
+    <div class="card-income">
         <h3>Gross Income</h3>
-        <h2>₱<?= number_format($totals['income'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['income'], 2) ?></h2>
     </div>
-    
-    <div class="card card-expense">
+    <div class="card-expense">
         <h3>Total Expenses</h3>
-        <h2>₱<?= number_format($totals['expense'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['expense'], 2) ?></h2>
     </div>
     
-    <div class="card card-profit">
+    <div class="card-profit" <?= $grossProfit < 0 ? 'style="border-left-color: var(--danger) !important;"' : '' ?>>
         <h3>Net Profit</h3>
-        <h2>₱<?= number_format($grossProfit, 2) ?></h2>
+        <h2 <?= $grossProfit < 0 ? 'style="color: var(--danger) !important;"' : '' ?>>
+            <?= $grossProfit < 0 ? '-' : '' ?><?= $sym ?><?= number_format(abs($grossProfit), 2) ?>
+        </h2>
     </div>
     
-    <div class="card card-pending">
+    <div class="card-pending">
         <h3>Pending Transactions</h3>
         <h2><?= $pendingCnt ?></h2>
     </div>
@@ -565,7 +566,6 @@ include 'includes/header.php';
 
 <div style="display: flex; justify-content: space-between; align-items: center; margin: 30px 0 15px;">
     <h3>Recent Transactions</h3>
-    <button class="btn btn-primary" onclick="openModal('transactionModal')">+ Add New</button>
 </div>
 
 <div class="tc">
@@ -931,19 +931,21 @@ include 'includes/header.php';
 </div>
 
 <div class="grid-3">
-    <div class="card card-income">
+    <div class="card-income">
         <h3>Total Income</h3>
-        <h2>₱<?= number_format($totals['income'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['income'], 2) ?></h2>
     </div>
     
-    <div class="card card-expense">
+    <div class="card-expense">
         <h3>Total Expenses</h3>
-        <h2>₱<?= number_format($totals['expense'], 2) ?></h2>
+        <h2><?= $sym ?><?= number_format($totals['expense'], 2) ?></h2>
     </div>
     
-    <div class="card card-profit">
+    <div class="card-profit" <?= $grossProfit < 0 ? 'style="border-left-color: var(--danger) !important;"' : '' ?>>
         <h3>Gross Profit</h3>
-        <h2>₱<?= number_format($grossProfit, 2) ?></h2>
+        <h2 <?= $grossProfit < 0 ? 'style="color: var(--danger) !important;"' : '' ?>>
+            <?= $grossProfit < 0 ? '-' : '' ?><?= $sym ?><?= number_format(abs($grossProfit), 2) ?>
+        </h2>
     </div>
 </div>
 
@@ -1031,8 +1033,11 @@ include 'includes/header.php';
                 <div style="flex: 1;">
                     <label style="display: block; margin-bottom: 5px; font-size: 12px; color: var(--text-muted);">Default Currency</label>
                     <select id="b_currency" class="sb" style="width: 100%;">
-                        <option value="PHP" <?= ($user['currency'] === 'PHP') ? 'selected' : '' ?>>PHP - Philippine Peso</option>
-                        <option value="USD" <?= ($user['currency'] === 'USD') ? 'selected' : '' ?>>USD - US Dollar</option>
+                        <option value="PHP" <?= ($user['currency'] === 'PHP') ? 'selected' : '' ?>>PHP - Philippine Peso (₱)</option>
+                        <option value="USD" <?= ($user['currency'] === 'USD') ? 'selected' : '' ?>>USD - US Dollar ($)</option>
+                        <option value="EUR" <?= ($user['currency'] === 'EUR') ? 'selected' : '' ?>>EUR - Euro (€)</option>
+                        <option value="GBP" <?= ($user['currency'] === 'GBP') ? 'selected' : '' ?>>GBP - British Pound (£)</option>
+                        <option value="JPY" <?= ($user['currency'] === 'JPY') ? 'selected' : '' ?>>JPY - Japanese Yen (¥)</option>
                     </select>
                 </div>
             </div>
@@ -1262,6 +1267,7 @@ $userId = (int)$_SESSION['user_id'];
 
 $search = $_GET['search'] ?? '';
 $typeFilter = $_GET['type'] ?? '';
+$statusFilter = $_GET['status'] ?? '';
 
 $query = "
     SELECT t.*, c.name AS client_name, cat.name AS category_name
@@ -1271,6 +1277,7 @@ $query = "
     WHERE t.user_id = $userId
 ";
 
+// Append filters to SQL Query dynamically
 if ($search !== '') {
     $searchEscaped = $db->real_escape_string($search);
     $query .= " AND t.description LIKE '%$searchEscaped%'";
@@ -1278,62 +1285,95 @@ if ($search !== '') {
 if ($typeFilter === 'income' || $typeFilter === 'expense') {
     $query .= " AND t.type = '$typeFilter'";
 }
+if ($statusFilter === 'pending' || $statusFilter === 'overdue' || $statusFilter === 'paid') {
+    $query .= " AND t.status = '$statusFilter'";
+}
+
 $query .= " ORDER BY t.transaction_date DESC, t.id DESC";
 $transactions = $db->query($query)->fetch_all(MYSQLI_ASSOC);
 
 include 'includes/header.php'; 
 ?>
 
-<div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-    <form method="GET" action="transactions.php" style="display: flex; gap: 10px;">
-        <input type="text" name="search" class="sb" placeholder="Search description..." value="<?= htmlspecialchars($search) ?>">
-        <select name="type" class="sb" style="width: auto;">
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 15px; margin-bottom: 20px;">
+    
+    <form method="GET" action="transactions.php" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+        <input type="text" name="search" class="sb" placeholder="Search..." value="<?= htmlspecialchars($search) ?>">
+        <select name="type" class="sb">
             <option value="">All Types</option>
             <option value="income" <?= $typeFilter === 'income' ? 'selected' : '' ?>>Income</option>
             <option value="expense" <?= $typeFilter === 'expense' ? 'selected' : '' ?>>Expense</option>
         </select>
-        <button type="submit" class="btn btn-primary">Filter</button>
-        <?php if($search || $typeFilter): ?>
-            <a href="transactions.php" class="btn" style="background: var(--surface-2); color: var(--text-main); text-decoration: none;">Clear</a>
+        
+        <?php if ($statusFilter): ?>
+            <input type="hidden" name="status" value="<?= htmlspecialchars($statusFilter) ?>">
         <?php endif; ?>
+        
+        <button type="submit" class="btn btn-primary">Search</button>
+        
+        <div style="display: flex; gap: 8px; margin-left: 10px; border-left: 1px solid var(--border-color); padding-left: 15px;">
+            <a href="transactions.php?status=pending<?= $search ? '&search='.urlencode($search) : '' ?><?= $typeFilter ? '&type='.urlencode($typeFilter) : '' ?>" 
+               class="badge <?= $statusFilter === 'pending' ? 'bpd' : '' ?>" 
+               style="text-decoration:none; padding: 8px 12px; font-size: 13px; display:flex; align-items:center; <?= $statusFilter !== 'pending' ? 'background: var(--surface-2); color: var(--text-muted);' : '' ?>">
+               ⏳ Pending
+            </a>
+            
+            <a href="transactions.php?status=overdue<?= $search ? '&search='.urlencode($search) : '' ?><?= $typeFilter ? '&type='.urlencode($typeFilter) : '' ?>" 
+               class="badge <?= $statusFilter === 'overdue' ? 'bod' : '' ?>" 
+               style="text-decoration:none; padding: 8px 12px; font-size: 13px; display:flex; align-items:center; <?= $statusFilter !== 'overdue' ? 'background: var(--surface-2); color: var(--text-muted);' : '' ?>">
+               ⚠️ Overdue
+            </a>
+            
+            <?php if ($statusFilter || $search || $typeFilter): ?>
+                <a href="transactions.php" style="color: var(--text-muted); font-size: 13px; text-decoration: none; margin-left: 5px; display: flex; align-items: center;">Clear All</a>
+            <?php endif; ?>
+        </div>
     </form>
     
-    <button class="btn btn-primary" onclick="openModal('transactionModal')">+ Add Transaction</button>
+    <div style="display: flex; gap: 10px;">
+        <button class="btn" onclick="openDynamicModal('income')" style="background: var(--primary) !important; color: #ffffff !important; border: none;">📈 Log Sale</button>
+        <button class="btn" onclick="openDynamicModal('expense')" style="background: var(--danger) !important; color: #ffffff !important; border: none;">📉 Log Expense</button>
+    </div>
 </div>
 
-<div class="tc">
-    <table>
+<div class="table-responsive">
+    <table class="table">
         <thead>
             <tr>
                 <th>Date</th>
                 <th>Description</th>
                 <th>Category</th>
-                <th>Client</th>
+                <th>Client / Payee</th>
                 <th>Amount</th>
                 <th>Status</th>
-                <th>Action</th>
+                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
             <?php if (empty($transactions)): ?>
-                <tr>
-                    <td colspan="7" style="text-align: center; padding: 30px; color: var(--text-muted);">No transactions found.</td>
-                </tr>
+                <tr><td colspan="7" style="text-align: center; padding: 20px; color: var(--text-muted);">No transactions found.</td></tr>
             <?php else: ?>
                 <?php foreach ($transactions as $tx): ?>
                     <tr>
                         <td><?= date('M d, Y', strtotime($tx['transaction_date'])) ?></td>
                         <td class="tdn">
                             <?= htmlspecialchars($tx['description']) ?>
-                            <?php if ($tx['invoice_no']): ?><div class="tds">Inv: <?= htmlspecialchars($tx['invoice_no']) ?></div><?php endif; ?>
+                            <?php if (!empty($tx['invoice_no'])): ?>
+                                <div class="tds">Inv: <?= htmlspecialchars($tx['invoice_no']) ?></div>
+                            <?php endif; ?>
                         </td>
                         <td><?= htmlspecialchars($tx['category_name'] ?? '—') ?></td>
                         <td><?= htmlspecialchars($tx['client_name'] ?? '—') ?></td>
                         <td class="<?= $tx['type'] === 'income' ? 'ap' : 'an' ?>">
-                            <?= $tx['type'] === 'income' ? '+' : '-' ?>₱<?= number_format($tx['amount'], 2) ?>
+                            <?= $tx['type'] === 'income' ? '+' : '-' ?><?= $sym ?><?= number_format($tx['amount'], 2) ?>
                         </td>
                         <td>
-                            <?php $statusClass = $tx['status'] === 'paid' ? 'bp2' : ($tx['status'] === 'pending' ? 'bpd' : 'bod'); ?>
+                            <?php 
+                                $statusClass = '';
+                                if ($tx['status'] === 'paid') $statusClass = 'bp2';
+                                elseif ($tx['status'] === 'pending') $statusClass = 'bpd';
+                                else $statusClass = 'bod';
+                            ?>
                             <span class="badge <?= $statusClass ?>"><?= ucfirst($tx['status']) ?></span>
                         </td>
                         <td style="display: flex; gap: 5px;">
@@ -2179,122 +2219,180 @@ $modalUid = (int)($_SESSION['user_id'] ?? 0);
 $clientsList = $modalDb->query("SELECT id, name FROM clients WHERE user_id=$modalUid ORDER BY name")->fetch_all(MYSQLI_ASSOC);
 $categoriesList = $modalDb->query("SELECT id, name, type FROM categories ORDER BY name")->fetch_all(MYSQLI_ASSOC);
 ?>
-        </div> </main> <div id="transactionModal" class="modal">
-        <div class="modal-content" style="max-width: 500px;">
-            <div class="modal-header">
-                <div class="modal-title">Add Transaction</div>
-                <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
-            </div>
-            <form id="txForm">
-                <input type="hidden" id="txId" value="">
-                
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 2;">
-                        <label>Description *</label>
-                        <input type="text" id="txDesc" class="sb" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Invoice No.</label>
-                        <input type="text" id="txInv" class="sb" placeholder="Optional">
-                    </div>
-                </div>
+    </div> 
+</main> 
 
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>Amount (₱) *</label>
-                        <input type="number" id="txAmount" class="sb" step="0.01" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Type *</label>
-                        <select id="txType" class="sb" required>
-                            <option value="income">Income</option>
-                            <option value="expense">Expense</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>Category</label>
-                        <select id="txCat" class="sb">
-                            <option value="">-- None --</option>
-                            <?php foreach($categoriesList as $cat): ?>
-                                <option value="<?= $cat['id'] ?>"><?= htmlspecialchars($cat['name']) ?> (<?= ucfirst($cat['type']) ?>)</option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Client</label>
-                        <select id="txClient" class="sb">
-                            <option value="">-- None --</option>
-                            <?php foreach($clientsList as $cli): ?>
-                                <option value="<?= $cli['id'] ?>"><?= htmlspecialchars($cli['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>Date *</label>
-                        <input type="date" id="txDate" class="sb" value="<?= date('Y-m-d') ?>" required>
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Status *</label>
-                        <select id="txStatus" class="sb" required>
-                            <option value="paid">Paid</option>
-                            <option value="pending">Pending</option>
-                            <option value="overdue">Overdue</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Notes</label>
-                    <textarea id="txNotes" class="sb" rows="2" style="width: 100%; resize: vertical;"></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Transaction</button>
-            </form>
+<div id="transactionModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <div class="modal-title" id="txModalTitle">Add Transaction</div>
+            <button class="close-btn" onclick="closeModal('transactionModal')">&times;</button>
         </div>
-    </div>
-
-    <div id="clientModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <div class="modal-title">Add Client</div>
-                <button class="close-btn" onclick="closeModal('clientModal')">&times;</button>
+        <form id="txForm">
+            <input type="hidden" id="txId" value="">
+            
+            <input type="hidden" id="txType" value="income">
+            
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 2;">
+                    <label id="lblDesc">Description *</label>
+                    <input type="text" id="txDesc" class="sb" required>
+                </div>
+                <div style="flex: 1;" id="divInv">
+                    <label>Invoice No.</label>
+                    <input type="text" id="txInv" class="sb" placeholder="Optional">
+                </div>
             </div>
-            <form id="clientForm">
-                <input type="hidden" id="clId" value="">
-                <div class="form-group">
-                    <label>Client Name *</label>
-                    <input type="text" id="clName" class="sb" required>
-                </div>
-                <div class="form-group" style="display: flex; gap: 10px;">
-                    <div style="flex: 1;">
-                        <label>Email Address</label>
-                        <input type="email" id="clEmail" class="sb">
-                    </div>
-                    <div style="flex: 1;">
-                        <label>Phone Number</label>
-                        <input type="text" id="clPhone" class="sb">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Physical Address</label>
-                    <input type="text" id="clAddress" class="sb">
-                </div>
-                <div class="form-group">
-                    <label>Notes / Details</label>
-                    <textarea id="clNotes" class="sb" rows="2" style="width: 100%; resize: vertical;"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Client</button>
-            </form>
-        </div>
-    </div>
 
-    <script src="assets/js/app.js"></script>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Amount (<?= $sym ?>) *</label>
+                    <input type="number" id="txAmount" class="sb" step="0.01" required>
+                </div>
+                <div style="flex: 1;">
+                    <label>Date *</label>
+                    <input type="date" id="txDate" class="sb" required value="<?= date('Y-m-d') ?>">
+                </div>
+            </div>
+
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label id="lblClient">Client</label>
+                    <select id="txClient" class="sb">
+                        <option value="">-- None --</option>
+                        <?php foreach($clientsList as $c): ?>
+                            <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div style="flex: 1;">
+                    <label>Category</label>
+                    <select id="txCat" class="sb">
+                        <option value="">-- None --</option>
+                        <?php foreach($categoriesList as $cat): ?>
+                            <option value="<?= $cat['id'] ?>" class="cat-opt cat-<?= $cat['type'] ?>"><?= htmlspecialchars($cat['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Status</label>
+                <select id="txStatus" class="sb">
+                    <option value="paid">Paid</option>
+                    <option value="pending">Pending</option>
+                    <option value="overdue">Overdue</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Notes</label>
+                <textarea id="txNotes" class="sb" rows="2" style="width: 100%;"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="txSubmitBtn" style="width: 100%; justify-content: center;">Save</button>
+        </form>
+    </div>
+</div>
+
+<div id="clientModal" class="modal">
+    <div class="modal-content" style="max-width: 400px;">
+        <div class="modal-header">
+            <div class="modal-title">Add Client</div>
+            <button class="close-btn" onclick="closeModal('clientModal')">&times;</button>
+        </div>
+        <form id="clientForm">
+            <input type="hidden" id="clId" value="">
+            <div class="form-group">
+                <label>Client Name *</label>
+                <input type="text" id="clName" class="sb" required>
+            </div>
+            <div class="form-group" style="display: flex; gap: 10px;">
+                <div style="flex: 1;">
+                    <label>Email Address</label>
+                    <input type="email" id="clEmail" class="sb">
+                </div>
+                <div style="flex: 1;">
+                    <label>Phone Number</label>
+                    <input type="text" id="clPhone" class="sb">
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Physical Address</label>
+                <input type="text" id="clAddress" class="sb">
+            </div>
+            <div class="form-group">
+                <label>Notes / Details</label>
+                <textarea id="clNotes" class="sb" rows="2" style="width: 100%; resize: vertical;"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Save Client</button>
+        </form>
+    </div>
+</div>
+
+<script src="assets/js/app.js"></script>
+
+<script>
+// --- THE "ILLUSION" ENGINE ---
+// This shapes the modal based on which button was clicked
+function openDynamicModal(type) {
+    if (typeof resetForm === "function") resetForm('txForm'); 
+    
+    // Lock the hidden type input
+    document.getElementById('txType').value = type;
+    
+    // Grab the UI elements
+    const title = document.getElementById('txModalTitle');
+    const lblDesc = document.getElementById('lblDesc');
+    const lblClient = document.getElementById('lblClient');
+    const divInv = document.getElementById('divInv');
+    const submitBtn = document.getElementById('txSubmitBtn');
+
+    if (type === 'income') {
+        title.innerText = 'Log a Sale';
+        lblDesc.innerText = 'Product / Service Rendered *';
+        lblClient.innerText = 'Customer';
+        divInv.style.display = 'block'; // Show Invoice field
+        submitBtn.innerText = 'Save Sale';
+    } else {
+        title.innerText = 'Log an Expense';
+        lblDesc.innerText = 'Expense Description *';
+        lblClient.innerText = 'Payee / Vendor';
+        divInv.style.display = 'none'; // Hide Invoice field for expenses
+        submitBtn.innerText = 'Save Expense';
+    }
+
+    // BONUS: Hide categories that don't match the selected type!
+    document.querySelectorAll('.cat-opt').forEach(opt => {
+        if (opt.classList.contains('cat-' + type)) {
+            opt.style.display = 'block';
+        } else {
+            opt.style.display = 'none';
+        }
+    });
+
+    document.getElementById('transactionModal').classList.add('active');
+}
+
+// Override the generic edit button so it triggers our beautiful illusion
+window.editTransaction = function(btn) {
+    const type = btn.getAttribute('data-type');
+    
+    // Call the illusion logic to set up the form
+    openDynamicModal(type); 
+    
+    // Populate the existing data
+    document.getElementById('txId').value = btn.getAttribute('data-id');
+    document.getElementById('txDesc').value = btn.getAttribute('data-desc');
+    document.getElementById('txInv').value = btn.getAttribute('data-inv');
+    document.getElementById('txAmount').value = btn.getAttribute('data-amount');
+    document.getElementById('txCat').value = btn.getAttribute('data-cat');
+    document.getElementById('txClient').value = btn.getAttribute('data-client');
+    document.getElementById('txDate').value = btn.getAttribute('data-date');
+    document.getElementById('txStatus').value = btn.getAttribute('data-status');
+    document.getElementById('txNotes').value = btn.getAttribute('data-notes');
+};
+</script>
 </body>
 </html>
 
@@ -2304,14 +2402,30 @@ FILE: EntryFlow/includes/header.php
 ================================================
 <?php
 // includes/header.php
-// This handles the head, opening tags, and sidebar for all pages.
+$headerDb = getDB();
+$headerUid = (int)($_SESSION['user_id'] ?? 0);
+
+// Fetch the business name and currency setting
+$adminInfo = $headerDb->query("SELECT business_name, currency FROM admins WHERE id = $headerUid")->fetch_assoc();
+$bizName = $adminInfo['business_name'] ?? 'My Business';
+$currCode = $adminInfo['currency'] ?? 'PHP';
+
+// Map Currency Codes to Symbols globally!
+$symbols = [
+    'PHP' => '₱',
+    'USD' => '$',
+    'EUR' => '€',
+    'GBP' => '£',
+    'JPY' => '¥'
+];
+$sym = $symbols[$currCode] ?? '₱';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EntryFlow — <?= htmlspecialchars($user['business_name'] ?? 'Dashboard') ?></title>
+    <title>EntryFlow — <?= htmlspecialchars($bizName) ?></title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time(); ?>">
 </head>
@@ -2320,7 +2434,7 @@ FILE: EntryFlow/includes/header.php
     <aside class="sidebar">
         <div class="logo-wrap">
             <div class="logo"><div class="logo-dot"></div> EntryFlow</div>
-            <div class="biz-name"><?= htmlspecialchars($user['business_name'] ?? 'My Business') ?></div>
+            <div class="biz-name"><?= htmlspecialchars($bizName) ?></div>
         </div>
 
         <nav>
@@ -2352,9 +2466,8 @@ FILE: EntryFlow/includes/header.php
         <header class="topbar">
             <h1 class="page-title">
                 <?php 
-                    // Dynamically set title based on page
                     $pageName = basename($_SERVER['PHP_SELF'], ".php");
-                    echo ucfirst($pageName); 
+                    echo ucfirst($pageName === 'index' ? 'dashboard' : $pageName);
                 ?>
             </h1>
         </header>
