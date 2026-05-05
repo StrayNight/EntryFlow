@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 04, 2026 at 03:00 PM
+-- Generation Time: May 05, 2026 at 08:08 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -62,26 +62,28 @@ CREATE TABLE `categories` (
   `user_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'NULL = global default',
   `name` varchar(100) NOT NULL,
   `type` enum('income','expense') NOT NULL,
-  `is_default` tinyint(1) NOT NULL DEFAULT 0
+  `is_default` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `categories`
 --
 
-INSERT INTO `categories` (`id`, `user_id`, `name`, `type`, `is_default`) VALUES
-(1, NULL, 'Sales', 'income', 1),
-(2, NULL, 'Service Revenue', 'income', 1),
-(3, NULL, 'Refunds', 'income', 1),
-(4, NULL, 'Other Income', 'income', 1),
-(5, NULL, 'Cloud Hosting', 'expense', 1),
-(6, NULL, 'SMS Services', 'expense', 1),
-(7, NULL, 'Marketing', 'expense', 1),
-(8, NULL, 'Salaries', 'expense', 1),
-(9, NULL, 'Inventory', 'expense', 1),
-(10, NULL, 'Rent', 'expense', 1),
-(11, NULL, 'Utilities', 'expense', 1),
-(12, NULL, 'Operations', 'expense', 1);
+INSERT INTO `categories` (`id`, `user_id`, `name`, `type`, `is_default`, `created_at`, `updated_at`) VALUES
+(1, NULL, 'Sales', 'income', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(2, NULL, 'Service Revenue', 'income', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(3, NULL, 'Refunds', 'income', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(4, NULL, 'Other Income', 'income', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(5, NULL, 'Cloud Hosting', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(6, NULL, 'SMS Services', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(7, NULL, 'Marketing', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(8, NULL, 'Salaries', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(9, NULL, 'Inventory', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(10, NULL, 'Rent', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(11, NULL, 'Utilities', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43'),
+(12, NULL, 'Operations', 'expense', 1, '2026-05-05 13:53:43', '2026-05-05 13:53:43');
 
 -- --------------------------------------------------------
 
@@ -97,36 +99,20 @@ CREATE TABLE `clients` (
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
   `notes` text DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp()
+  `created_at` datetime NOT NULL DEFAULT current_timestamp(),
+  `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `clients`
 --
 
-INSERT INTO `clients` (`id`, `user_id`, `name`, `email`, `phone`, `address`, `notes`, `created_at`) VALUES
-(11, 6, 'Emmge Ramos', 'Emmge@email.com', '0969 696 6969', 'Malaybalay City', 'Fatass man', '2026-05-04 18:00:00'),
-(12, 6, 'Jay Kyle Tanedo', 'Jay@email.com', '0967 694 2021', 'Manila City', 'Goofy ass man', '2026-05-04 18:00:21'),
-(13, 6, 'Khem Shwartz Cabutad', 'ShwartzIzBlack@yahoo.com', '0991 191 6969', 'Tomato Town', 'Black ass man', '2026-05-04 18:00:47'),
-(14, 6, 'Tax Man', 'EyeHeartMoney@email.com', '0987 654 3210', 'Epstein Island', NULL, '2026-05-04 18:07:39');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `import_logs`
---
-
-CREATE TABLE `import_logs` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `filename` varchar(255) DEFAULT NULL,
-  `total_rows` int(11) NOT NULL DEFAULT 0,
-  `imported_rows` int(11) NOT NULL DEFAULT 0,
-  `failed_rows` int(11) NOT NULL DEFAULT 0,
-  `status` enum('success','partial','failed') NOT NULL DEFAULT 'success',
-  `error_log` text DEFAULT NULL,
-  `imported_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+INSERT INTO `clients` (`id`, `user_id`, `name`, `email`, `phone`, `address`, `notes`, `created_at`, `updated_at`) VALUES
+(11, 6, 'Emmge Ramos', 'Emmge@email.com', '0969 696 6969', 'Malaybalay City', 'Fatass man', '2026-05-04 18:00:00', '2026-05-05 13:53:43'),
+(12, 6, 'Jay Kyle Tanedo', 'Jay@email.com', '0967 694 2021', 'Manila City', 'Goofy ass man', '2026-05-04 18:00:21', '2026-05-05 13:53:43'),
+(13, 6, 'Khem Shwartz Cabutad', 'ShwartzIzBlack@yahoo.com', '0991 191 6969', 'Tomato Town', 'Black ass man', '2026-05-04 18:00:47', '2026-05-05 13:53:43'),
+(14, 6, 'Tax Man', 'EyeHeartMoney@email.com', '0987 654 3210', 'Epstein Island', NULL, '2026-05-04 18:07:39', '2026-05-05 13:53:43'),
+(15, 6, 'Ian Augustine Balarias', 'Bayout@gmail.com', '0900 000 0001', 'Landing City', NULL, '2026-05-05 13:56:54', '2026-05-05 13:56:54');
 
 -- --------------------------------------------------------
 
@@ -158,28 +144,14 @@ INSERT INTO `transactions` (`id`, `user_id`, `client_id`, `category_id`, `invoic
 (9, 6, 13, 1, '1234', 'Extra large Illocos impanada', 599.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:02:04', '2026-05-04 18:02:04'),
 (10, 6, 11, 1, '666', 'Dubai Chewy Choco', 199.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:02:58', '2026-05-04 18:02:58'),
 (11, 6, 12, 1, '420', 'San Marino Corned Beef', 99.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:05:53', '2026-05-04 18:05:53'),
-(13, 6, 14, 1, '420', 'Monthly Rent', 5000.00, 'expense', 'overdue', '2026-05-04', NULL, '2026-05-04 18:20:36', '2026-05-04 18:20:36'),
+(13, 6, 14, 10, '420', 'Monthly Rent', 5000.00, 'expense', 'overdue', '2026-05-04', NULL, '2026-05-04 18:20:36', '2026-05-05 14:03:18'),
 (14, 6, 12, 1, '1893', '(Bulk) Dubai Chewy Choco', 2500.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:21:40', '2026-05-04 18:21:40'),
 (15, 6, 11, 1, '3242', 'Extra large Illocos impanada', 599.00, 'income', 'paid', '2026-05-04', NULL, '2026-05-04 18:22:11', '2026-05-04 18:22:11'),
-(16, 6, 14, 10, NULL, 'Monthly Rent', 5000.00, 'expense', 'paid', '2026-05-04', NULL, '2026-05-04 18:41:21', '2026-05-04 18:41:21');
-
--- --------------------------------------------------------
-
---
--- Table structure for table `transaction_templates`
---
-
-CREATE TABLE `transaction_templates` (
-  `id` int(10) UNSIGNED NOT NULL,
-  `user_id` int(10) UNSIGNED NOT NULL,
-  `template_name` varchar(150) NOT NULL,
-  `type` enum('income','expense') NOT NULL,
-  `description` varchar(255) DEFAULT NULL,
-  `amount` decimal(14,2) DEFAULT NULL,
-  `category_id` int(10) UNSIGNED DEFAULT NULL,
-  `client_id` int(10) UNSIGNED DEFAULT NULL,
-  `created_at` datetime NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+(16, 6, 14, 10, NULL, 'Monthly Rent', 5000.00, 'expense', 'paid', '2026-05-04', NULL, '2026-05-04 18:41:21', '2026-05-04 18:41:21'),
+(17, 6, 15, 1, '555', '(Bulk) King Sized Illocos Empanada', 4999.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:58:05', '2026-05-05 13:58:05'),
+(18, 6, 15, 1, '321', 'San Marino Corned Beef', 99.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:58:58', '2026-05-05 13:58:58'),
+(19, 6, 15, 1, '909', '(Bulk) Dubai Chewy Choco', 1499.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:59:39', '2026-05-05 13:59:39'),
+(20, 6, 12, 2, '69', 'Pahilot', 150.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 14:03:51', '2026-05-05 14:03:51');
 
 --
 -- Indexes for dumped tables
@@ -207,13 +179,6 @@ ALTER TABLE `clients`
   ADD KEY `fk_clients_user` (`user_id`);
 
 --
--- Indexes for table `import_logs`
---
-ALTER TABLE `import_logs`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_log_user` (`user_id`);
-
---
 -- Indexes for table `transactions`
 --
 ALTER TABLE `transactions`
@@ -223,15 +188,6 @@ ALTER TABLE `transactions`
   ADD KEY `idx_user_date` (`user_id`,`transaction_date`),
   ADD KEY `idx_type` (`type`),
   ADD KEY `idx_status` (`status`);
-
---
--- Indexes for table `transaction_templates`
---
-ALTER TABLE `transaction_templates`
-  ADD PRIMARY KEY (`id`),
-  ADD KEY `fk_template_user` (`user_id`),
-  ADD KEY `fk_template_category` (`category_id`),
-  ADD KEY `fk_template_client` (`client_id`);
 
 --
 -- AUTO_INCREMENT for dumped tables
@@ -253,25 +209,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
-
---
--- AUTO_INCREMENT for table `import_logs`
---
-ALTER TABLE `import_logs`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
-
---
--- AUTO_INCREMENT for table `transaction_templates`
---
-ALTER TABLE `transaction_templates`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
 
 --
 -- Constraints for dumped tables
@@ -290,26 +234,12 @@ ALTER TABLE `clients`
   ADD CONSTRAINT `fk_clients_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
 
 --
--- Constraints for table `import_logs`
---
-ALTER TABLE `import_logs`
-  ADD CONSTRAINT `fk_log_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
-
---
 -- Constraints for table `transactions`
 --
 ALTER TABLE `transactions`
   ADD CONSTRAINT `fk_tx_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_tx_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
   ADD CONSTRAINT `fk_tx_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
-
---
--- Constraints for table `transaction_templates`
---
-ALTER TABLE `transaction_templates`
-  ADD CONSTRAINT `fk_template_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_template_client` FOREIGN KEY (`client_id`) REFERENCES `clients` (`id`) ON DELETE SET NULL,
-  ADD CONSTRAINT `fk_template_user` FOREIGN KEY (`user_id`) REFERENCES `admins` (`id`) ON DELETE CASCADE;
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
