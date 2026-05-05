@@ -1,30 +1,41 @@
 <?php
-session_start();
-require_once 'config.php';
+require_once 'config.php'; 
+session_start();  
 requireLogin();
 
 $db = getDB();
 $userId = (int)$_SESSION['user_id'];
 
-// Search logic
+// --- SECURE SEARCH LOGIC (Prepared Statements) ---
 $search = $_GET['search'] ?? '';
-$searchQuery = "";
-if ($search !== '') {
-    $searchEscaped = $db->real_escape_string($search);
-    $searchQuery = "AND c.name LIKE '%$searchEscaped%'";
-}
 
-// Fetch clients
 $query = "
     SELECT c.*, COUNT(t.id) AS tx_count, 
            SUM(CASE WHEN t.type='income' THEN t.amount ELSE 0 END) AS total_revenue
     FROM clients c
-    LEFT JOIN transactions t ON t.client_id = c.id AND t.user_id = $userId
-    WHERE c.user_id = $userId $searchQuery
-    GROUP BY c.id 
-    ORDER BY c.name ASC
+    LEFT JOIN transactions t ON t.client_id = c.id AND t.user_id = ?
+    WHERE c.user_id = ? 
 ";
-$clients = $db->query($query)->fetch_all(MYSQLI_ASSOC);
+
+// If a search term exists, append it to the query
+if ($search !== '') {
+    $query .= " AND c.name LIKE ?";
+}
+$query .= " GROUP BY c.id ORDER BY c.name ASC";
+
+$stmt = $db->prepare($query);
+
+// Bind the parameters securely
+if ($search !== '') {
+    $searchTerm = "%" . $search . "%";
+    $stmt->bind_param("iis", $userId, $userId, $searchTerm);
+} else {
+    $stmt->bind_param("ii", $userId, $userId);
+}
+
+$stmt->execute();
+$clients = $stmt->get_result()->fetch_all(MYSQLI_ASSOC);
+// --------------------------------------------------
 
 include 'includes/header.php'; 
 ?>
@@ -76,18 +87,20 @@ include 'includes/header.php';
                         <td><?= htmlspecialchars($client['address'] ?? '—') ?></td>
                         <td><?= (int)$client['tx_count'] ?></td>
                         <td class="ap">₱<?= number_format($client['total_revenue'] ?? 0, 2) ?></td>
-                        <td style="display: flex; gap: 5px;">
-                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
-                                onclick="editClient(this)"
-                                data-id="<?= $client['id'] ?>"
-                                data-name="<?= htmlspecialchars($client['name']) ?>"
-                                data-email="<?= htmlspecialchars($client['email'] ?? '') ?>"
-                                data-phone="<?= htmlspecialchars($client['phone'] ?? '') ?>"
-                                data-address="<?= htmlspecialchars($client['address'] ?? '') ?>"
-                                data-notes="<?= htmlspecialchars($client['notes'] ?? '') ?>"
-                            >Edit</button>
-                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
-                                onclick="confirmDelete('client', <?= $client['id'] ?>)">Delete</button>
+                        <td>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
+                                    onclick="editClient(this)"
+                                    data-id="<?= $client['id'] ?>"
+                                    data-name="<?= htmlspecialchars($client['name']) ?>"
+                                    data-email="<?= htmlspecialchars($client['email'] ?? '') ?>"
+                                    data-phone="<?= htmlspecialchars($client['phone'] ?? '') ?>"
+                                    data-address="<?= htmlspecialchars($client['address'] ?? '') ?>"
+                                    data-notes="<?= htmlspecialchars($client['notes'] ?? '') ?>"
+                                >Edit</button>
+                                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
+                                    onclick="confirmDelete('client', <?= $client['id'] ?>)">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

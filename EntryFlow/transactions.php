@@ -1,6 +1,6 @@
 <?php
-session_start();
-require_once 'config.php';
+require_once 'config.php'; 
+session_start();  
 requireLogin();
 
 $db = getDB();
@@ -117,22 +117,24 @@ include 'includes/header.php';
                             ?>
                             <span class="badge <?= $statusClass ?>"><?= ucfirst($tx['status']) ?></span>
                         </td>
-                        <td style="display: flex; gap: 5px;">
-                            <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
-                                onclick="editTransaction(this)"
-                                data-id="<?= $tx['id'] ?>"
-                                data-desc="<?= htmlspecialchars($tx['description']) ?>"
-                                data-inv="<?= htmlspecialchars($tx['invoice_no'] ?? '') ?>"
-                                data-amount="<?= $tx['amount'] ?>"
-                                data-type="<?= $tx['type'] ?>"
-                                data-cat="<?= $tx['category_id'] ?? '' ?>"
-                                data-client="<?= $tx['client_id'] ?? '' ?>"
-                                data-date="<?= $tx['transaction_date'] ?>"
-                                data-status="<?= $tx['status'] ?>"
-                                data-notes="<?= htmlspecialchars($tx['notes'] ?? '') ?>"
-                            >Edit</button>
-                            <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
-                                onclick="confirmDelete('transaction', <?= $tx['id'] ?>)">Delete</button>
+                        <td>
+                            <div style="display: flex; gap: 5px;">
+                                <button class="btn" style="padding: 4px 8px; font-size: 11px;" 
+                                    onclick="editTransaction(this)"
+                                    data-id="<?= $tx['id'] ?>"
+                                    data-desc="<?= htmlspecialchars($tx['description']) ?>"
+                                    data-inv="<?= htmlspecialchars($tx['invoice_no'] ?? '') ?>"
+                                    data-amount="<?= $tx['amount'] ?>"
+                                    data-type="<?= $tx['type'] ?>"
+                                    data-cat="<?= $tx['category_id'] ?? '' ?>"
+                                    data-client="<?= $tx['client_id'] ?? '' ?>"
+                                    data-date="<?= $tx['transaction_date'] ?>"
+                                    data-status="<?= $tx['status'] ?>"
+                                    data-notes="<?= htmlspecialchars($tx['notes'] ?? '') ?>"
+                                >Edit</button>
+                                <button class="btn btn-danger" style="padding: 4px 8px; font-size: 11px;" 
+                                    onclick="confirmDelete('transaction', <?= $tx['id'] ?>)">Delete</button>
+                            </div>
                         </td>
                     </tr>
                 <?php endforeach; ?>

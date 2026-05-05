@@ -1,59 +1,44 @@
 <?php
-session_start();
+require_once 'config.php'; 
+session_start();           
 if (!empty($_SESSION['user_id'])) { header('Location: index.php'); exit; }
-require_once 'config.php';
 
 $error = '';
 $mode  = $_POST['mode'] ?? 'login';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $db    = getDB();
+    $db = getDB();
     $email = trim($_POST['email'] ?? '');
-    $pass  = $_POST['password'] ?? '';
+    $pass = $_POST['password'] ?? '';
+    
+    // --- NEW: reCAPTCHA VERIFICATION ---
+    $recaptchaResponse = $_POST['g-recaptcha-response'] ?? '';
+    $secretKey = "6Ld2F9osAAAAAOVrbpi_BwEhzYftXi4MNolnOoND";
 
-    if ($mode === 'login') {
-        $stmt = $db->prepare("SELECT id, name, password, business_name FROM admins WHERE email = ? AND is_active = 1");
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $user = $stmt->get_result()->fetch_assoc();
-        if ($user && password_verify($pass, $user['password'])) {
-            $_SESSION['user_id']      = $user['id'];
-            $_SESSION['user_name']    = $user['name'];
-            $_SESSION['business']     = $user['business_name'];
-            header('Location: index.php');
-            exit;
-        }
-        $error = 'Wrong email or password.';
+    // Verify the response with Google's servers
+    $verifyUrl = "https://www.google.com/recaptcha/api/siteverify?secret={$secretKey}&response={$recaptchaResponse}";
+    $verifyResponse = file_get_contents($verifyUrl);
+    $responseData = json_decode($verifyResponse);
 
-    } elseif ($mode === 'register') {
-        $name = trim($_POST['name'] ?? '');
-        $biz  = trim($_POST['business_name'] ?? '');
-        if (!$name || !$email || !$pass || !$biz) {
-            $error = 'All fields are required.';
-        } elseif (strlen($pass) < 6) {
-            $error = 'Password must be at least 6 characters.';
-        } else {
-            // Check if email exists
-            $stmt = $db->prepare("SELECT id FROM admins WHERE email = ?");
+    if (!$responseData->success) {
+        $error = 'Please complete the reCAPTCHA verification.';
+    } else {
+        // --- PROCEED WITH NORMAL LOGIN ---
+        if ($mode === 'login') {
+            $stmt = $db->prepare("SELECT id, name, password, business_name FROM admins WHERE email = ? AND is_active = 1");
             $stmt->bind_param('s', $email);
             $stmt->execute();
-            if ($stmt->get_result()->num_rows > 0) {
-                $error = 'Email is already registered.';
+            $user = $stmt->get_result()->fetch_assoc();
+            
+            if ($user && password_verify($pass, $user['password'])) {
+                session_regenerate_id(true); 
+                $_SESSION['user_id']   = $user['id'];
+                $_SESSION['user_name'] = $user['name'];
+                $_SESSION['business']  = $user['business_name'];
+                header('Location: index.php');
+                exit;
             } else {
-                $hash = password_hash($pass, PASSWORD_BCRYPT);
-                $stmt = $db->prepare("INSERT INTO admins (name, email, password, business_name) VALUES (?, ?, ?, ?)");
-                $stmt->bind_param('ssss', $name, $email, $hash, $biz);
-                if ($stmt->execute()) {
-                    $_SESSION['user_id']   = $db->insert_id;
-                    $_SESSION['user_name'] = $name;
-                    $_SESSION['business']  = $biz;
-                    // Insert default settings
-                    $db->query("INSERT INTO settings (user_id) VALUES ({$_SESSION['user_id']})");
-                    header('Location: index.php');
-                    exit;
-                } else {
-                    $error = 'Registration failed. Try again.';
-                }
+                $error = 'Invalid credentials.';
             }
         }
     }
@@ -191,6 +176,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     </style>
 </head>
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <body>
 
 <div class="auth-box">
@@ -218,6 +204,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label>Password</label>
                 <input type="password" name="password" placeholder="••••••••" required />
             </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <div class="g-recaptcha" data-sitekey="6Ld2F9osAAAAANX98htMa4342Ipg_SqoGaGasFcT"></div>
+            </div>
             <button class="btn btn-primary btn-block" type="submit">Sign In to Dashboard</button>
         </form>
     </div>
@@ -240,6 +229,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div class="form-group">
                 <label>Password <span style="font-size: 11px; color: var(--text-muted);">(min 6 chars)</span></label>
                 <input type="password" name="password" placeholder="••••••••" required />
+            </div>
+            <div class="form-group" style="margin-bottom: 15px;">
+                <div class="g-recaptcha" data-sitekey="6Ld2F9osAAAAANX98htMa4342Ipg_SqoGaGasFcT"></div>
             </div>
             <button class="btn btn-primary btn-block" type="submit">Create Account</button>
         </form>
