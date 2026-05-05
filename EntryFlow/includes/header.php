@@ -43,6 +43,18 @@ $sym = $symbols[$currCode] ?? '₱';
             <a href="transactions.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'transactions.php' ? 'active' : '' ?>">
                 <span class="ni-ic">💸</span> Transactions
             </a>
+            <a href="income.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'income.php' ? 'active' : '' ?>">
+                <span class="ni-ic">📈</span> Income
+            </a>
+            <a href="expense.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'expense.php' ? 'active' : '' ?>">
+                <span class="ni-ic">🛒</span> Expense
+            </a>
+            <a href="templates.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'templates.php' ? 'active' : '' ?>">
+                <span class="ni-ic">🗂️</span> Templates
+            </a>
+            <a href="business.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'business.php' ? 'active' : '' ?>">
+                <span class="ni-ic">🏢</span> Business
+            </a>
             <a href="clients.php" class="nav-item <?= basename($_SERVER['PHP_SELF']) == 'clients.php' ? 'active' : '' ?>">
                 <span class="ni-ic">👥</span> Clients
             </a>
