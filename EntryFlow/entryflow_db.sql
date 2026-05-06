@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 05, 2026 at 08:24 AM
+-- Generation Time: May 06, 2026 at 03:43 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -108,11 +108,16 @@ CREATE TABLE `clients` (
 --
 
 INSERT INTO `clients` (`id`, `user_id`, `name`, `email`, `phone`, `address`, `notes`, `created_at`, `updated_at`) VALUES
-(11, 6, 'Emmge Ramos', 'Emmge@email.com', '0969 696 6969', 'Malaybalay City', 'Fatass man', '2026-05-04 18:00:00', '2026-05-05 13:53:43'),
-(12, 6, 'Jay Kyle Tanedo', 'Jay@email.com', '0967 694 2021', 'Manila City', 'Goofy ass man', '2026-05-04 18:00:21', '2026-05-05 13:53:43'),
-(13, 6, 'Khem Shwartz Cabutad', 'ShwartzIzBlack@yahoo.com', '0991 191 6969', 'Tomato Town', 'Black ass man', '2026-05-04 18:00:47', '2026-05-05 13:53:43'),
+(11, 6, 'Emmge Ramos', 'Emmge@email.com', '0969 696 6969', 'Malaybalay City', NULL, '2026-05-04 18:00:00', '2026-05-06 16:54:11'),
+(12, 6, 'Jay Kyle Tanedo', 'Jay@email.com', '0967 694 2021', 'Manila City', NULL, '2026-05-04 18:00:21', '2026-05-06 16:54:29'),
+(13, 6, 'Khem Shwartz Cabutad', 'ShwartzIzBlack@yahoo.com', '0991 191 6969', 'Tomato Town', NULL, '2026-05-04 18:00:47', '2026-05-06 16:54:29'),
 (14, 6, 'Tax Man', 'EyeHeartMoney@email.com', '0987 654 3210', 'Epstein Island', NULL, '2026-05-04 18:07:39', '2026-05-05 13:53:43'),
-(15, 6, 'Ian Augustine Balarias', 'Bayout@gmail.com', '0900 000 0001', 'Landing City', NULL, '2026-05-05 13:56:54', '2026-05-05 13:56:54');
+(15, 6, 'Ian Augustine Balarias', 'Bayout@gmail.com', '0900 000 0001', 'Landing City', NULL, '2026-05-05 13:56:54', '2026-05-05 13:56:54'),
+(20, 6, 'TechNova Solutions', 'contact@technova.com', '0917 111 2222', 'Makati City', 'Corporate B2B Client', '2026-03-01 10:00:00', '2026-03-01 10:00:00'),
+(21, 6, 'Apex Marketing Group', 'billing@apex.ph', '0918 333 4444', 'BGC, Taguig', 'Monthly retainer contract', '2026-03-05 14:30:00', '2026-03-05 14:30:00'),
+(22, 6, 'Sarah Jenkins', 's.jenkins@gmail.com', '0919 555 6666', 'Quezon City', 'Retail bulk customer', '2026-03-10 09:15:00', '2026-03-10 09:15:00'),
+(23, 6, 'Local Brew Cafe', 'hello@localbrew.com', '0920 777 8888', 'Malaybalay City', 'Local supply partner', '2026-04-02 16:45:00', '2026-04-02 16:45:00'),
+(24, 6, 'City Heights Properties', 'admin@cityheights.ph', '0921 999 0000', 'Cebu City', NULL, '2026-04-15 11:20:00', '2026-04-15 11:20:00');
 
 -- --------------------------------------------------------
 
@@ -151,7 +156,31 @@ INSERT INTO `transactions` (`id`, `user_id`, `client_id`, `category_id`, `invoic
 (17, 6, 15, 1, '555', '(Bulk) King Sized Illocos Empanada', 4999.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:58:05', '2026-05-05 13:58:05'),
 (18, 6, 15, 1, '321', 'San Marino Corned Beef', 99.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:58:58', '2026-05-05 13:58:58'),
 (19, 6, 15, 1, '909', '(Bulk) Dubai Chewy Choco', 1499.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 13:59:39', '2026-05-05 13:59:39'),
-(20, 6, 12, 2, '69', 'Pahilot', 150.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 14:03:51', '2026-05-05 14:03:51');
+(20, 6, 12, 2, '69', 'Pahilot', 150.00, 'income', 'paid', '2026-05-05', NULL, '2026-05-05 14:03:51', '2026-05-05 14:03:51'),
+(21, 6, 20, 2, 'INV-1001', 'IT Consulting Services', 45000.00, 'income', 'paid', '2026-03-05', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(22, 6, 21, 2, 'INV-1002', 'Marketing Strategy Retainer', 30000.00, 'income', 'paid', '2026-03-10', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(23, 6, NULL, 10, NULL, 'Office Space Rent - March', 15000.00, 'expense', 'paid', '2026-03-01', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(24, 6, NULL, 11, NULL, 'Electricity & Water Bills', 4500.00, 'expense', 'paid', '2026-03-15', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(25, 6, NULL, 8, NULL, 'Staff Salaries - Mid March', 25000.00, 'expense', 'paid', '2026-03-15', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(26, 6, 22, 1, 'INV-1003', 'Bulk Hardware Purchase', 85000.00, 'income', 'paid', '2026-03-20', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(27, 6, NULL, 5, NULL, 'AWS Cloud Hosting', 3500.00, 'expense', 'paid', '2026-03-25', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(28, 6, NULL, 8, NULL, 'Staff Salaries - End March', 25000.00, 'expense', 'paid', '2026-03-30', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(29, 6, NULL, 10, NULL, 'Office Space Rent - April', 15000.00, 'expense', 'paid', '2026-04-01', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(30, 6, 23, 1, 'INV-1004', 'POS System Installation', 28000.00, 'income', 'paid', '2026-04-05', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(31, 6, 21, 2, 'INV-1005', 'Marketing Strategy Retainer', 30000.00, 'income', 'paid', '2026-04-10', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(32, 6, NULL, 7, NULL, 'Facebook Ads Budget', 10000.00, 'expense', 'paid', '2026-04-12', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(33, 6, NULL, 11, NULL, 'Electricity & Water Bills', 5200.00, 'expense', 'paid', '2026-04-15', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(34, 6, NULL, 8, NULL, 'Staff Salaries - Mid April', 25000.00, 'expense', 'paid', '2026-04-15', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(35, 6, 24, 2, 'INV-1006', 'Network Setup Services', 65000.00, 'income', 'paid', '2026-04-18', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(36, 6, 20, 2, 'INV-1007', 'IT Consulting Services', 45000.00, 'income', 'overdue', '2026-04-20', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(37, 6, NULL, 5, NULL, 'AWS Cloud Hosting', 3500.00, 'expense', 'paid', '2026-04-25', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(38, 6, NULL, 9, NULL, 'Office Supplies & Inventory', 12500.00, 'expense', 'pending', '2026-04-28', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(39, 6, NULL, 8, NULL, 'Staff Salaries - End April', 25000.00, 'expense', 'paid', '2026-04-30', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(40, 6, NULL, 10, NULL, 'Office Space Rent - May', 15000.00, 'expense', 'paid', '2026-05-01', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(41, 6, 23, 1, 'INV-1008', 'Software License Renewals', 18000.00, 'income', 'paid', '2026-05-02', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(42, 6, 21, 2, 'INV-1009', 'Marketing Strategy Retainer', 30000.00, 'income', 'pending', '2026-05-04', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(43, 6, NULL, 6, NULL, 'Twilio SMS Gateway API', 2500.00, 'expense', 'paid', '2026-05-05', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59'),
+(44, 6, 12, 1, 'INV-1010', 'Hardware Repair Services', 5000.00, 'income', 'pending', '2026-05-05', NULL, '2026-05-05 16:50:59', '2026-05-05 16:50:59');
 
 --
 -- Indexes for dumped tables
@@ -209,13 +238,13 @@ ALTER TABLE `categories`
 -- AUTO_INCREMENT for table `clients`
 --
 ALTER TABLE `clients`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- AUTO_INCREMENT for table `transactions`
 --
 ALTER TABLE `transactions`
-  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
 
 --
 -- Constraints for dumped tables
