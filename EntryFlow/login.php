@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         // --- PROCEED WITH NORMAL LOGIN ---
         if ($mode === 'login') {
-            $stmt = $db->prepare("SELECT id, name, password, business_name FROM admins WHERE email = ? AND is_active = 1");
+            $stmt = $db->prepare("SELECT id, name, password, business_name FROM admins WHERE email = ?");
             $stmt->bind_param('s', $email);
             $stmt->execute();
             $user = $stmt->get_result()->fetch_assoc();

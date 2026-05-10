@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: May 06, 2026 at 03:43 PM
+-- Generation Time: May 10, 2026 at 02:15 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.0.30
 
@@ -32,14 +32,11 @@ CREATE TABLE `admins` (
   `name` varchar(100) NOT NULL,
   `email` varchar(150) NOT NULL,
   `password` varchar(255) NOT NULL,
-  `role` enum('owner','staff') NOT NULL DEFAULT 'owner',
   `business_name` varchar(200) DEFAULT NULL,
   `business_type` varchar(100) DEFAULT NULL,
   `phone` varchar(20) DEFAULT NULL,
   `address` text DEFAULT NULL,
   `currency` varchar(5) NOT NULL DEFAULT 'PHP',
-  `avatar_color` varchar(20) NOT NULL DEFAULT '#9B1D1D',
-  `is_active` tinyint(1) NOT NULL DEFAULT 1,
   `created_at` datetime NOT NULL DEFAULT current_timestamp(),
   `updated_at` datetime NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -48,8 +45,8 @@ CREATE TABLE `admins` (
 -- Dumping data for table `admins`
 --
 
-INSERT INTO `admins` (`id`, `name`, `email`, `password`, `role`, `business_name`, `business_type`, `phone`, `address`, `currency`, `avatar_color`, `is_active`, `created_at`, `updated_at`) VALUES
-(6, 'Rick Warren Nicasio', '2401107842@student.buksu.edu.ph', '$2y$10$Xz4xvkTOFYoS5m0vLRaK4O1GaCaRA.8EF9jk/ogqPjinmcyyBk6IK', 'owner', 'Monkey Business', 'Goofing Around', '09622431801', 'Malaybalay City', 'PHP', '#9B1D1D', 1, '2026-04-30 11:45:48', '2026-05-04 19:00:11');
+INSERT INTO `admins` (`id`, `name`, `email`, `password`, `business_name`, `business_type`, `phone`, `address`, `currency`, `created_at`, `updated_at`) VALUES
+(6, 'Rick Warren Nicasio', '2401107842@student.buksu.edu.ph', '$2y$10$Xz4xvkTOFYoS5m0vLRaK4O1GaCaRA.8EF9jk/ogqPjinmcyyBk6IK', 'Monkey Business', 'Goofing Around', '09622431801', 'Malaybalay City', 'PHP', '2026-04-30 11:45:48', '2026-05-04 19:00:11');
 
 -- --------------------------------------------------------
 
